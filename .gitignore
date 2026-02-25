@@ -1,0 +1,26 @@
+# Node
+node_modules/
+client/node_modules/
+client/dist/
+
+# Python legacy
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+
+# App data
+books.db
+*.db-shm
+*.db-wal
+
+# Environment
+.env
+
+# Editor / OS
+.DS_Store
+.vscode/
+*.swp
+
+.claude/

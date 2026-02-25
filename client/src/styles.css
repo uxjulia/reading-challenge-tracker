@@ -448,7 +448,7 @@ body {
   flex-direction: row;
   gap: 12px;
   overflow-x: auto;
-  padding-bottom: 8px;
+  padding-bottom: 12px;
   scrollbar-width: thin;
 }
 

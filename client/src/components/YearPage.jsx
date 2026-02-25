@@ -1,5 +1,19 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import BookModal from "./BookModal";
 import LoginModal from "./LoginModal";
 import StarInput from "./StarInput";
@@ -62,6 +76,63 @@ function RatingStars({ value }) {
   );
 }
 
+function SortableWtrBook({ book, isAuthenticated, onStartReading, onEdit }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: book.id, disabled: !isAuthenticated });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  return (
+    <div className="wtr-book" ref={setNodeRef} style={style}>
+      <div className="wtr-cover">
+        {book.cover_url ? (
+          <img
+            src={book.cover_url}
+            alt={`${book.title} cover`}
+            loading="lazy"
+          />
+        ) : (
+          <div className="wtr-cover-placeholder">
+            <span>{titleInitials(book.title)}</span>
+          </div>
+        )}
+      </div>
+      <div className="wtr-info">
+        <strong className="wtr-title">{book.title}</strong>
+        <span className="wtr-author">{book.author}</span>
+        {isAuthenticated && (
+          <div className="wtr-actions">
+            <button
+              className="btn-primary btn-sm want-to-read-button"
+              onClick={onStartReading}
+            >
+              Start Reading
+            </button>
+            <button className="btn-secondary btn-sm btn-icon" onClick={onEdit}>
+              <span className="material-symbols-outlined">edit_square</span>
+            </button>
+          </div>
+        )}
+      </div>
+      {isAuthenticated && (
+        <div className="wtr-drag-handle" {...attributes} {...listeners}>
+          <span className="material-symbols-outlined">drag_indicator</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function YearPage() {
   const params = useParams();
   const navigate = useNavigate();
@@ -75,6 +146,9 @@ function YearPage() {
   const [loginOpen, setLoginOpen] = useState(false);
   const [goalEditing, setGoalEditing] = useState(false);
   const [goalDraft, setGoalDraft] = useState("");
+  const [wtrBooks, setWtrBooks] = useState([]);
+
+  const sensors = useSensors(useSensor(PointerSensor));
 
   async function load() {
     setLoading(true);
@@ -94,6 +168,10 @@ function YearPage() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [year]);
+
+  useEffect(() => {
+    if (data) setWtrBooks(data.want_to_read);
+  }, [data]);
 
   useEffect(() => {
     const modalOpen = bookModalOpen || loginOpen;
@@ -204,6 +282,25 @@ function YearPage() {
       }),
     });
     await load();
+  }
+
+  async function handleWtrDragEnd(event) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = wtrBooks.findIndex((b) => b.id === active.id);
+    const newIndex = wtrBooks.findIndex((b) => b.id === over.id);
+    const reordered = arrayMove(wtrBooks, oldIndex, newIndex);
+
+    setWtrBooks(reordered);
+    try {
+      await apiFetch("/api/want-to-read/reorder", {
+        method: "PUT",
+        body: JSON.stringify({ ids: reordered.map((b) => b.id) }),
+      });
+    } catch {
+      setWtrBooks(wtrBooks);
+    }
   }
 
   async function saveGoal() {
@@ -437,50 +534,31 @@ function YearPage() {
         </section>
       )}
 
-      {data.want_to_read.length > 0 && (
+      {wtrBooks.length > 0 && (
         <section className="want-to-read-section">
           <h2 className="want-to-read-title">Want to Read</h2>
-          <div className="want-to-read-list">
-            {data.want_to_read.map((book) => (
-              <div className="wtr-book" key={book.id}>
-                <div className="wtr-cover">
-                  {book.cover_url ? (
-                    <img
-                      src={book.cover_url}
-                      alt={`${book.title} cover`}
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="wtr-cover-placeholder">
-                      <span>{titleInitials(book.title)}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="wtr-info">
-                  <strong className="wtr-title">{book.title}</strong>
-                  <span className="wtr-author">{book.author}</span>
-                  {data.is_authenticated && (
-                    <div className="wtr-actions">
-                      <button
-                        className="btn-primary btn-sm want-to-read-button"
-                        onClick={() => markWantAsReading(book.id)}
-                      >
-                        Start Reading
-                      </button>
-                      <button
-                        className="btn-secondary btn-sm btn-icon"
-                        onClick={() => openEditModal(book.id)}
-                      >
-                        <span className="material-symbols-outlined">
-                          edit_square
-                        </span>
-                      </button>
-                    </div>
-                  )}
-                </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleWtrDragEnd}
+          >
+            <SortableContext
+              items={wtrBooks.map((b) => b.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="want-to-read-list">
+                {wtrBooks.map((book) => (
+                  <SortableWtrBook
+                    key={book.id}
+                    book={book}
+                    isAuthenticated={data.is_authenticated}
+                    onStartReading={() => markWantAsReading(book.id)}
+                    onEdit={() => openEditModal(book.id)}
+                  />
+                ))}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
         </section>
       )}
 
@@ -562,7 +640,7 @@ function YearPage() {
 
         {!data.books.length &&
           !data.currently_reading.length &&
-          !data.want_to_read.length && (
+          !wtrBooks.length && (
             <div className="empty-state">
               <p>No books logged for {year} yet.</p>
               {data.is_authenticated && (
@@ -577,8 +655,7 @@ function YearPage() {
           )}
 
         {!data.books.length &&
-          (data.currently_reading.length > 0 ||
-            data.want_to_read.length > 0) && (
+          (data.currently_reading.length > 0 || wtrBooks.length > 0) && (
             <div className="empty-state">
               <p>No finished books yet this year.</p>
             </div>

@@ -270,7 +270,7 @@ body {
   color: #fff;
   border: none;
   border-radius: 6px;
-  padding: 8px 18px;
+  padding: 8px 15px;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -462,6 +462,25 @@ body {
   padding: 12px;
   flex-shrink: 0;
   width: 270px;
+  position: relative;
+}
+
+.wtr-drag-handle {
+  color: var(--text-muted, #888);
+  cursor: grab;
+  touch-action: none;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.wtr-drag-handle:active {
+  cursor: grabbing;
+}
+
+.wtr-drag-handle .material-symbols-outlined {
+  font-size: 20px;
+  user-select: none;
 }
 
 .wtr-cover {

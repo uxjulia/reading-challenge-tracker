@@ -217,6 +217,15 @@ app.delete("/api/books/:bookId", requireAuth, (req, res) => {
   return res.status(204).send();
 });
 
+app.put("/api/want-to-read/reorder", requireAuth, (req, res) => {
+  const { ids } = req.body || {};
+  if (!Array.isArray(ids) || ids.some((id) => !Number.isInteger(id))) {
+    return res.status(422).json({ detail: "ids must be an array of integers" });
+  }
+  db.reorderWantToRead(ids);
+  return res.json({ ok: true });
+});
+
 app.put("/api/goal/:year", requireAuth, (req, res) => {
   const year = Number(req.params.year);
   if (!Number.isInteger(year) || year < 2000 || year > 2100) {

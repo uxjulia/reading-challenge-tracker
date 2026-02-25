@@ -34,6 +34,7 @@ const MIGRATIONS = [
   "ALTER TABLE books ADD COLUMN want_to_read INTEGER NOT NULL DEFAULT 0",
   "ALTER TABLE books ADD COLUMN date_started TEXT",
   "ALTER TABLE books ADD COLUMN page_count INTEGER",
+  "ALTER TABLE books ADD COLUMN wtr_sort_order INTEGER",
 ];
 
 const db = new Database(DB_PATH);
@@ -101,10 +102,22 @@ function getWantToRead(year, includePrivate = true) {
     .prepare(
       `SELECT * FROM books
        WHERE year = ? AND want_to_read = 1 ${privateFilter}
-       ORDER BY created_at DESC`
+       ORDER BY
+         CASE WHEN wtr_sort_order IS NULL THEN 1 ELSE 0 END,
+         wtr_sort_order ASC,
+         created_at DESC`
     )
     .all(year);
   return rows.map(toBook);
+}
+
+function reorderWantToRead(ids) {
+  const update = db.prepare(
+    "UPDATE books SET wtr_sort_order = ? WHERE id = ? AND want_to_read = 1"
+  );
+  db.transaction(() => {
+    ids.forEach((id, index) => update.run(index, id));
+  })();
 }
 
 function getAllYears() {
@@ -232,6 +245,7 @@ module.exports = {
   getBooksForYear,
   getCurrentlyReading,
   getWantToRead,
+  reorderWantToRead,
   getAllYears,
   getYearStats,
   getAllGenres,

@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import StarInput from "./StarInput";
 
+const getToday = () => new Date().toISOString().split("T")[0];
+
 function BookModal({
   open,
   onClose,
@@ -51,12 +53,12 @@ function BookModal({
       }));
       return;
     }
-
+    const today = getToday();
     setForm({
       year: book.year || initialYear,
       title: book.title || "",
       author: book.author || "",
-      date_finished: book.date_finished || "",
+      date_finished: book.date_finished || today,
       rating: book.rating || 0,
       genre: book.genre || "",
       notes: book.notes || "",
@@ -64,7 +66,7 @@ function BookModal({
       is_private: Boolean(book.is_private),
       currently_reading: Boolean(book.currently_reading),
       want_to_read: Boolean(book.want_to_read),
-      date_started: book.date_started || "",
+      date_started: book.date_started || today,
       page_count: book.page_count || "",
     });
 
@@ -87,12 +89,13 @@ function BookModal({
     setError("");
     setSaving(false);
     if (!book) {
+      const today = getToday();
       setCoverOptions([]);
       setForm({
         year: initialYear,
         title: "",
         author: "",
-        date_finished: "",
+        date_finished: today,
         rating: 0,
         genre: "",
         notes: "",
@@ -100,7 +103,7 @@ function BookModal({
         is_private: false,
         currently_reading: false,
         want_to_read: false,
-        date_started: "",
+        date_started: today,
         page_count: "",
       });
     }
@@ -204,8 +207,6 @@ function BookModal({
         ...prev,
         want_to_read: true,
         currently_reading: false,
-        date_finished: "",
-        date_started: "",
         rating: 0,
         genre: "",
         notes: "",
@@ -218,7 +219,6 @@ function BookModal({
         ...prev,
         want_to_read: false,
         currently_reading: true,
-        date_finished: "",
         rating: 0,
         genre: "",
         notes: "",
@@ -230,7 +230,7 @@ function BookModal({
       ...prev,
       want_to_read: false,
       currently_reading: false,
-      date_started: "",
+      // date_started: "",
     }));
   }
 
@@ -310,6 +310,16 @@ function BookModal({
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, author: e.target.value }))
                 }
+                onBlur={() => {
+                  if (
+                    form.title.trim() &&
+                    form.author.trim() &&
+                    !coverOptions.length &&
+                    !loadingCover
+                  ) {
+                    handleFetchCover();
+                  }
+                }}
                 required
               />
             </div>

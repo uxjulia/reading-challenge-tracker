@@ -984,6 +984,8 @@ input[type="date"] {
   align-items: center;
   gap: 5px;
   cursor: pointer;
+  background-color: transparent;
+  border: none;
 }
 .cover-option-img {
   width: 90px;
@@ -997,10 +999,11 @@ input[type="date"] {
     border-color 0.15s;
 }
 .cover-option:hover .cover-option-img {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
 }
 .cover-option.selected .cover-option-img {
   border-color: var(--accent);
+  border-width: 2px;
 }
 .cover-option-img img {
   width: 100%;

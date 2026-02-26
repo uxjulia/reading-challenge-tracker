@@ -195,6 +195,7 @@ function YearPage() {
         e.target.tagName !== "INPUT" &&
         e.target.tagName !== "TEXTAREA"
       ) {
+        e.preventDefault();
         setEditingBook(null);
         setBookModalOpen(true);
       }

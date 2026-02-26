@@ -414,6 +414,7 @@ function BookModal({
               <label htmlFor="f-year">Challenge Year *</label>
               <input
                 type="number"
+                inputMode="numeric"
                 id="f-year"
                 min="2000"
                 max="2100"
@@ -438,7 +439,9 @@ function BookModal({
                     setForm((prev) => ({
                       ...prev,
                       date_finished: val,
-                      ...(yearFromDate?.length === 4 && { year: Number(yearFromDate) }),
+                      ...(yearFromDate?.length === 4 && {
+                        year: Number(yearFromDate),
+                      }),
                     }));
                   }}
                 />
@@ -495,13 +498,18 @@ function BookModal({
                     );
                     if (e.key === "ArrowDown") {
                       e.preventDefault();
-                      setGenreIndex((i) => Math.min(i + 1, filtered.length - 1));
+                      setGenreIndex((i) =>
+                        Math.min(i + 1, filtered.length - 1)
+                      );
                     } else if (e.key === "ArrowUp") {
                       e.preventDefault();
                       setGenreIndex((i) => Math.max(i - 1, 0));
                     } else if (e.key === "Enter" && genreIndex >= 0) {
                       e.preventDefault();
-                      setForm((prev) => ({ ...prev, genre: filtered[genreIndex] }));
+                      setForm((prev) => ({
+                        ...prev,
+                        genre: filtered[genreIndex],
+                      }));
                       setGenreOpen(false);
                       setGenreIndex(-1);
                     } else if (e.key === "Escape") {
@@ -512,28 +520,29 @@ function BookModal({
                   placeholder="e.g. Fantasy"
                   autoComplete="off"
                 />
-                {genreOpen && (() => {
-                  const filtered = genres.filter((g) =>
-                    g.toLowerCase().includes(form.genre.toLowerCase())
-                  );
-                  return filtered.length > 0 ? (
-                    <ul className="genre-suggestions">
-                      {filtered.map((genre, i) => (
-                        <li
-                          key={genre}
-                          className={i === genreIndex ? "active" : ""}
-                          onMouseDown={() => {
-                            setForm((prev) => ({ ...prev, genre }));
-                            setGenreOpen(false);
-                            setGenreIndex(-1);
-                          }}
-                        >
-                          {genre}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null;
-                })()}
+                {genreOpen &&
+                  (() => {
+                    const filtered = genres.filter((g) =>
+                      g.toLowerCase().includes(form.genre.toLowerCase())
+                    );
+                    return filtered.length > 0 ? (
+                      <ul className="genre-suggestions">
+                        {filtered.map((genre, i) => (
+                          <li
+                            key={genre}
+                            className={i === genreIndex ? "active" : ""}
+                            onMouseDown={() => {
+                              setForm((prev) => ({ ...prev, genre }));
+                              setGenreOpen(false);
+                              setGenreIndex(-1);
+                            }}
+                          >
+                            {genre}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null;
+                  })()}
               </div>
             </div>
           )}
@@ -542,6 +551,7 @@ function BookModal({
             <label htmlFor="f-page-count">Page Count</label>
             <input
               type="number"
+              inputMode="numeric"
               id="f-page-count"
               min="1"
               max="99999"

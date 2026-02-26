@@ -1065,6 +1065,12 @@ input[type="date"] {
 .star-rating {
   display: flex;
   gap: 2px;
+  border-radius: 4px;
+  outline: none;
+}
+.star-rating:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 .star-btn {
   background: none;

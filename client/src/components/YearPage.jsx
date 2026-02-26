@@ -16,6 +16,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import BookModal from "./BookModal";
 import LoginModal from "./LoginModal";
+import StatsModal from "./StatsModal";
 import StarInput from "./StarInput";
 
 const currentYear = new Date().getFullYear();
@@ -144,6 +145,7 @@ function YearPage() {
   const [bookModalOpen, setBookModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState(null);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
   const [goalEditing, setGoalEditing] = useState(false);
   const [goalDraft, setGoalDraft] = useState("");
   const [wtrBooks, setWtrBooks] = useState([]);
@@ -336,6 +338,16 @@ function YearPage() {
       <header className="app-header">
         <h1>{headerTitle}</h1>
         <div className="header-auth">
+          <button
+            className="btn-auth btn-stats-icon"
+            onClick={() => setStatsOpen(true)}
+            aria-label="View reading stats"
+            type="button"
+          >
+            <span className="material-symbols-outlined" aria-hidden="true">
+              bar_chart
+            </span>
+          </button>
           {data.is_authenticated ? (
             <button className="btn-auth" onClick={logout}>
               Logout
@@ -705,6 +717,8 @@ function YearPage() {
         onClose={() => setLoginOpen(false)}
         onLogin={login}
       />
+
+      <StatsModal open={statsOpen} onClose={() => setStatsOpen(false)} />
     </>
   );
 }

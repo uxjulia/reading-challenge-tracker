@@ -148,6 +148,11 @@ app.get("/api/year/:year", (req, res) => {
   return res.json(payload);
 });
 
+app.get("/api/stats", (_req, res) => {
+  const stats = db.getGlobalStats(true);
+  return res.json(stats);
+});
+
 app.get("/api/cover", async (req, res) => {
   const title = String(req.query.title || "").trim();
   const author = String(req.query.author || "").trim();

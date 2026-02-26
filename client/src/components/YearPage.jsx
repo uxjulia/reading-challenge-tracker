@@ -9,7 +9,7 @@ import {
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  verticalListSortingStrategy,
+  horizontalListSortingStrategy,
   useSortable,
   arrayMove,
 } from "@dnd-kit/sortable";
@@ -568,7 +568,7 @@ function YearPage() {
           >
             <SortableContext
               items={wtrBooks.map((b) => b.id)}
-              strategy={verticalListSortingStrategy}
+              strategy={horizontalListSortingStrategy}
             >
               <div className="want-to-read-list">
                 {wtrBooks.map((book) => (

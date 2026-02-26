@@ -952,7 +952,8 @@ body {
   font-size: 0.95rem;
   color: var(--text);
 }
-.genre-suggestions li:hover {
+.genre-suggestions li:hover,
+.genre-suggestions li.active {
   background: var(--accent);
   color: #fff;
 }

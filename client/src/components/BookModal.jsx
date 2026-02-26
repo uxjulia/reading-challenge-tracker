@@ -37,6 +37,7 @@ function BookModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [genreOpen, setGenreOpen] = useState(false);
+  const [genreIndex, setGenreIndex] = useState(-1);
   const titleRef = useRef(null);
 
   const mode = book ? "edit" : "add";
@@ -477,9 +478,31 @@ function BookModal({
                   onChange={(e) => {
                     setForm((prev) => ({ ...prev, genre: e.target.value }));
                     setGenreOpen(true);
+                    setGenreIndex(-1);
                   }}
                   onFocus={() => setGenreOpen(true)}
                   onBlur={() => setTimeout(() => setGenreOpen(false), 150)}
+                  onKeyDown={(e) => {
+                    if (!genreOpen) return;
+                    const filtered = genres.filter((g) =>
+                      g.toLowerCase().includes(form.genre.toLowerCase())
+                    );
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      setGenreIndex((i) => Math.min(i + 1, filtered.length - 1));
+                    } else if (e.key === "ArrowUp") {
+                      e.preventDefault();
+                      setGenreIndex((i) => Math.max(i - 1, 0));
+                    } else if (e.key === "Enter" && genreIndex >= 0) {
+                      e.preventDefault();
+                      setForm((prev) => ({ ...prev, genre: filtered[genreIndex] }));
+                      setGenreOpen(false);
+                      setGenreIndex(-1);
+                    } else if (e.key === "Escape") {
+                      setGenreOpen(false);
+                      setGenreIndex(-1);
+                    }
+                  }}
                   placeholder="e.g. Fantasy"
                   autoComplete="off"
                 />
@@ -489,12 +512,14 @@ function BookModal({
                   );
                   return filtered.length > 0 ? (
                     <ul className="genre-suggestions">
-                      {filtered.map((genre) => (
+                      {filtered.map((genre, i) => (
                         <li
                           key={genre}
+                          className={i === genreIndex ? "active" : ""}
                           onMouseDown={() => {
                             setForm((prev) => ({ ...prev, genre }));
                             setGenreOpen(false);
+                            setGenreIndex(-1);
                           }}
                         >
                           {genre}

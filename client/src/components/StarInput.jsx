@@ -1,8 +1,47 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 function StarInput({ rating, setRating }) {
   const [hoverRating, setHoverRating] = useState(0);
+  const containerRef = useRef(null);
   const active = hoverRating || rating;
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    function ratingFromX(clientX) {
+      const rect = el.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const fraction = Math.max(0, Math.min(x, rect.width)) / rect.width;
+      return Math.max(0.5, Math.min(5, Math.round(fraction * 10) / 2));
+    }
+
+    function onTouchStart(e) {
+      e.preventDefault();
+      setHoverRating(ratingFromX(e.touches[0].clientX));
+    }
+
+    function onTouchMove(e) {
+      e.preventDefault();
+      setHoverRating(ratingFromX(e.touches[0].clientX));
+    }
+
+    function onTouchEnd(e) {
+      e.preventDefault();
+      setRating(ratingFromX(e.changedTouches[0].clientX));
+      setHoverRating(0);
+    }
+
+    el.addEventListener("touchstart", onTouchStart, { passive: false });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: false });
+
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [setRating]);
 
   function handleKeyDown(e) {
     if (e.key === "ArrowRight" || e.key === "ArrowUp") {
@@ -16,6 +55,7 @@ function StarInput({ rating, setRating }) {
 
   return (
     <div
+      ref={containerRef}
       className="star-rating"
       role="slider"
       aria-label="Book rating"

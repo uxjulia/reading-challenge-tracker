@@ -72,6 +72,10 @@ function validateCreate(body) {
 
 function validateUpdate(body) {
   return {
+    year:
+      body.year === undefined
+        ? undefined
+        : asRequiredNumber(body.year, { min: 2000, max: 2100, int: true }),
     title:
       body.title === undefined ? undefined : asRequiredString(body.title, 500),
     author:

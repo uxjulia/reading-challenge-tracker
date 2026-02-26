@@ -34,6 +34,7 @@ const MIGRATIONS = [
   "ALTER TABLE books ADD COLUMN want_to_read INTEGER NOT NULL DEFAULT 0",
   "ALTER TABLE books ADD COLUMN date_started TEXT",
   "ALTER TABLE books ADD COLUMN page_count INTEGER",
+  "ALTER TABLE books ADD COLUMN wtr_sort_order INTEGER",
 ];
 
 const db = new Database(DB_PATH);
@@ -101,10 +102,22 @@ function getWantToRead(year, includePrivate = true) {
     .prepare(
       `SELECT * FROM books
        WHERE year = ? AND want_to_read = 1 ${privateFilter}
-       ORDER BY created_at DESC`
+       ORDER BY
+         CASE WHEN wtr_sort_order IS NULL THEN 1 ELSE 0 END,
+         wtr_sort_order ASC,
+         created_at DESC`
     )
     .all(year);
   return rows.map(toBook);
+}
+
+function reorderWantToRead(ids) {
+  const update = db.prepare(
+    "UPDATE books SET wtr_sort_order = ? WHERE id = ? AND want_to_read = 1"
+  );
+  db.transaction(() => {
+    ids.forEach((id, index) => update.run(index, id));
+  })();
 }
 
 function getAllYears() {
@@ -208,6 +221,88 @@ function deleteBook(bookId) {
   return info.changes > 0;
 }
 
+function getGlobalStats(includePrivate = false) {
+  const privateFilter = includePrivate ? "" : "AND is_private = 0";
+
+  const totals = db
+    .prepare(
+      `SELECT COUNT(*) as total_books,
+              SUM(page_count) as total_pages,
+              AVG(rating) as avg_rating,
+              COUNT(DISTINCT author) as total_authors
+       FROM books
+       WHERE currently_reading = 0 AND want_to_read = 0 ${privateFilter}`
+    )
+    .get();
+
+  const topAuthors = db
+    .prepare(
+      `SELECT author, COUNT(*) as count, ROUND(AVG(rating), 1) as avg_rating
+       FROM books
+       WHERE currently_reading = 0 AND want_to_read = 0 ${privateFilter}
+       GROUP BY author
+       ORDER BY count DESC, avg_rating DESC
+       LIMIT 10`
+    )
+    .all();
+
+  const topGenres = db
+    .prepare(
+      `SELECT genre, COUNT(*) as count
+       FROM books
+       WHERE genre IS NOT NULL AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
+       GROUP BY genre
+       ORDER BY count DESC
+       LIMIT 10`
+    )
+    .all();
+
+  const booksByYear = db
+    .prepare(
+      `SELECT year, COUNT(*) as count
+       FROM books
+       WHERE currently_reading = 0 AND want_to_read = 0 ${privateFilter}
+       GROUP BY year
+       ORDER BY count DESC`
+    )
+    .all();
+
+  const topMonth = db
+    .prepare(
+      `SELECT strftime('%m', date_finished) as month, COUNT(*) as count
+       FROM books
+       WHERE date_finished IS NOT NULL AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
+       GROUP BY month
+       ORDER BY count DESC
+       LIMIT 1`
+    )
+    .get();
+
+  const longestBook = db
+    .prepare(
+      `SELECT title, author, page_count
+       FROM books
+       WHERE page_count IS NOT NULL AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
+       ORDER BY page_count DESC
+       LIMIT 1`
+    )
+    .get();
+
+  return {
+    totals: {
+      books: totals.total_books,
+      pages: totals.total_pages || 0,
+      avg_rating: totals.avg_rating,
+      authors: totals.total_authors,
+    },
+    top_authors: topAuthors,
+    top_genres: topGenres,
+    books_by_year: booksByYear,
+    top_month: topMonth || null,
+    longest_book: longestBook || null,
+  };
+}
+
 function getGoal(year) {
   const row = db
     .prepare("SELECT goal FROM reading_goals WHERE year = ?")
@@ -232,9 +327,11 @@ module.exports = {
   getBooksForYear,
   getCurrentlyReading,
   getWantToRead,
+  reorderWantToRead,
   getAllYears,
   getYearStats,
   getAllGenres,
+  getGlobalStats,
   createBook,
   getBook,
   updateBook,

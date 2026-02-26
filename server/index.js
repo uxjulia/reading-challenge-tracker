@@ -148,6 +148,11 @@ app.get("/api/year/:year", (req, res) => {
   return res.json(payload);
 });
 
+app.get("/api/stats", (_req, res) => {
+  const stats = db.getGlobalStats(true);
+  return res.json(stats);
+});
+
 app.get("/api/cover", async (req, res) => {
   const title = String(req.query.title || "").trim();
   const author = String(req.query.author || "").trim();
@@ -215,6 +220,15 @@ app.delete("/api/books/:bookId", requireAuth, (req, res) => {
     return res.status(404).json({ detail: "Book not found" });
   }
   return res.status(204).send();
+});
+
+app.put("/api/want-to-read/reorder", requireAuth, (req, res) => {
+  const { ids } = req.body || {};
+  if (!Array.isArray(ids) || ids.some((id) => !Number.isInteger(id))) {
+    return res.status(422).json({ detail: "ids must be an array of integers" });
+  }
+  db.reorderWantToRead(ids);
+  return res.json({ ok: true });
 });
 
 app.put("/api/goal/:year", requireAuth, (req, res) => {

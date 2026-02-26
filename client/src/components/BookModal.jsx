@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import StarInput from "./StarInput";
 
 const getToday = () => new Date().toISOString().split("T")[0];
@@ -36,6 +36,7 @@ function BookModal({
   const [loadingCover, setLoadingCover] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const titleRef = useRef(null);
 
   const mode = book ? "edit" : "add";
   const readingStatus = form.want_to_read
@@ -108,6 +109,11 @@ function BookModal({
       });
     }
   }, [open, book, initialYear]);
+
+  useEffect(() => {
+    if (!open) return;
+    titleRef.current?.focus();
+  }, [open, readingStatus]);
 
   if (!open) return null;
 
@@ -292,6 +298,7 @@ function BookModal({
             <div className="form-group">
               <label htmlFor="f-title">Title *</label>
               <input
+                ref={titleRef}
                 type="text"
                 id="f-title"
                 value={form.title}

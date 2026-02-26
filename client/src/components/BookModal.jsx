@@ -93,12 +93,15 @@ function BookModal({
     setSaving(false);
     if (!book) {
       const today = getToday();
+      const currentYear = new Date().getFullYear();
+      const defaultFinishDate =
+        Number(initialYear) === currentYear ? today : `${initialYear}-12-31`;
       setCoverOptions([]);
       setForm({
         year: initialYear,
         title: "",
         author: "",
-        date_finished: today,
+        date_finished: defaultFinishDate,
         rating: 0,
         genre: "",
         notes: "",
@@ -429,12 +432,15 @@ function BookModal({
                   type="date"
                   id="f-date-finished"
                   value={form.date_finished}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const yearFromDate = val?.split("-")[0];
                     setForm((prev) => ({
                       ...prev,
-                      date_finished: e.target.value,
-                    }))
-                  }
+                      date_finished: val,
+                      ...(yearFromDate?.length === 4 && { year: Number(yearFromDate) }),
+                    }));
+                  }}
                 />
               </div>
             )}

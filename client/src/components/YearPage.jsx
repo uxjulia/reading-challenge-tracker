@@ -140,6 +140,7 @@ function YearPage() {
   const year = Number(params.year || currentYear);
 
   const [loading, setLoading] = useState(true);
+  const [showLoading, setShowLoading] = useState(false);
   const [data, setData] = useState(null);
   const [pageError, setPageError] = useState("");
   const [bookModalOpen, setBookModalOpen] = useState(false);
@@ -170,6 +171,15 @@ function YearPage() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [year]);
+
+  useEffect(() => {
+    if (!loading) {
+      setShowLoading(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowLoading(true), 1500);
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   useEffect(() => {
     if (data) setWtrBooks(data.want_to_read);
@@ -330,6 +340,7 @@ function YearPage() {
     if (pageError) {
       return <div className="app-loading">{pageError}</div>;
     }
+    if (!showLoading) return null;
     return <div className="app-loading">Loading...</div>;
   }
 
@@ -692,6 +703,11 @@ function YearPage() {
           </svg>
           View on GitHub
         </a>
+        {import.meta.env.DEV && (
+          <span className="footer-build-date">
+            Latest Build: {__BUILD_DATE__}
+          </span>
+        )}
       </footer>
 
       <BookModal

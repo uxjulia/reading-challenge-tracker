@@ -36,6 +36,7 @@ function BookModal({
   const [loadingCover, setLoadingCover] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [genreOpen, setGenreOpen] = useState(false);
   const titleRef = useRef(null);
 
   const mode = book ? "edit" : "add";
@@ -472,18 +473,36 @@ function BookModal({
                 <input
                   type="text"
                   id="f-genre"
-                  list="genre-list"
                   value={form.genre}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, genre: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    setForm((prev) => ({ ...prev, genre: e.target.value }));
+                    setGenreOpen(true);
+                  }}
+                  onFocus={() => setGenreOpen(true)}
+                  onBlur={() => setTimeout(() => setGenreOpen(false), 150)}
                   placeholder="e.g. Fantasy"
+                  autoComplete="off"
                 />
-                <datalist id="genre-list">
-                  {genres.map((genre) => (
-                    <option key={genre} value={genre} />
-                  ))}
-                </datalist>
+                {genreOpen && (() => {
+                  const filtered = genres.filter((g) =>
+                    g.toLowerCase().includes(form.genre.toLowerCase())
+                  );
+                  return filtered.length > 0 ? (
+                    <ul className="genre-suggestions">
+                      {filtered.map((genre) => (
+                        <li
+                          key={genre}
+                          onMouseDown={() => {
+                            setForm((prev) => ({ ...prev, genre }));
+                            setGenreOpen(false);
+                          }}
+                        >
+                          {genre}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null;
+                })()}
               </div>
             </div>
           )}

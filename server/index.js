@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const express = require("express");
 const session = require("express-session");
+const bcrypt = require("bcryptjs");
 const cors = require("cors");
 const path = require("path");
 const db = require("./db");
@@ -22,8 +23,6 @@ const {
 const PORT = Number(process.env.PORT || 8000);
 const SECRET_KEY =
   process.env.SECRET_KEY || "dev-secret-key-change-in-production";
-const APP_PASSWORD = process.env.APP_PASSWORD || "";
-const USERNAME = process.env.USERNAME || "My";
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 
 db.initDb();
@@ -54,12 +53,22 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 function isAuthenticated(req) {
-  return Boolean(req.session?.authenticated);
+  return Boolean(req.session?.userId);
 }
 
 function requireAuth(req, res, next) {
-  if (!isAuthenticated(req)) {
+  if (!req.session?.userId) {
     return res.status(401).json({ detail: "Authentication required" });
+  }
+  next();
+}
+
+function requireAdmin(req, res, next) {
+  if (!req.session?.userId) {
+    return res.status(401).json({ detail: "Authentication required" });
+  }
+  if (!req.session?.isAdmin) {
+    return res.status(403).json({ detail: "Admin access required" });
   }
   next();
 }
@@ -85,16 +94,16 @@ function attachDaysReading(books) {
   });
 }
 
-function buildYearPayload(year, includePrivate) {
-  const books = db.getBooksForYear(year, includePrivate);
+function buildYearPayload(year, userId, username, isAdmin, includePrivate) {
+  const books = db.getBooksForYear(year, userId, includePrivate);
   const currentlyReading = attachDaysReading(
-    db.getCurrentlyReading(year, includePrivate)
+    db.getCurrentlyReading(year, userId, includePrivate)
   );
-  const wantToRead = db.getWantToRead(year, includePrivate);
-  const allYears = db.getAllYears();
-  const stats = db.getYearStats(year, includePrivate);
-  const genres = db.getAllGenres();
-  const goal = db.getGoal(year);
+  const wantToRead = db.getWantToRead(year, userId, includePrivate);
+  const allYears = db.getAllYears(userId);
+  const stats = db.getYearStats(year, userId, includePrivate);
+  const genres = db.getAllGenres(userId);
+  const goal = db.getGoal(year, userId);
   const pace = goal ? computePace(year, stats.count, goal) : null;
   const readingPace = computeReadingPace(books, year);
 
@@ -110,27 +119,45 @@ function buildYearPayload(year, includePrivate) {
     pace,
     reading_pace: readingPace,
     is_authenticated: includePrivate,
-    app_user: USERNAME,
+    is_admin: isAdmin,
+    app_user: username,
   };
 }
+
+// ── Auth routes ───────────────────────────────────────────────────────────────
 
 app.get("/auth/status", (req, res) => {
   res.json({
     authenticated: isAuthenticated(req),
-    app_user: USERNAME,
+    userId: req.session?.userId || null,
+    username: req.session?.username || null,
+    isAdmin: req.session?.isAdmin || false,
   });
 });
 
-app.post("/auth/login", (req, res) => {
-  const password = req.body?.password;
-  if (!APP_PASSWORD) {
-    return res.status(503).json({ detail: "APP_PASSWORD is not configured" });
+app.post("/auth/login", async (req, res) => {
+  const { username, password } = req.body || {};
+  if (typeof username !== "string" || typeof password !== "string") {
+    return res
+      .status(400)
+      .json({ detail: "username and password are required" });
   }
-  if (typeof password !== "string" || password !== APP_PASSWORD) {
-    return res.status(401).json({ detail: "Incorrect password" });
+
+  const user = db.getUserByUsername(username);
+  if (!user) {
+    return res.status(401).json({ detail: "Incorrect username or password" });
   }
-  req.session.authenticated = true;
-  return res.json({ ok: true });
+
+  const match = await bcrypt.compare(password, user.password_hash);
+  if (!match) {
+    return res.status(401).json({ detail: "Incorrect username or password" });
+  }
+
+  req.session.userId = user.id;
+  req.session.username = user.username;
+  req.session.isAdmin = Boolean(user.is_admin);
+
+  return res.json({ ok: true, isAdmin: Boolean(user.is_admin) });
 });
 
 app.post("/auth/logout", (req, res) => {
@@ -139,17 +166,116 @@ app.post("/auth/logout", (req, res) => {
   });
 });
 
+// ── Admin routes ──────────────────────────────────────────────────────────────
+
+app.get("/admin/users", requireAdmin, (_req, res) => {
+  const users = db.getAllUsers();
+  return res.json(users);
+});
+
+app.post("/admin/users", requireAdmin, async (req, res) => {
+  const { username, password, isAdmin } = req.body || {};
+  if (typeof username !== "string" || !username.trim()) {
+    return res.status(422).json({ detail: "username is required" });
+  }
+  if (typeof password !== "string" || password.length < 1) {
+    return res.status(422).json({ detail: "password is required" });
+  }
+
+  const existing = db.getUserByUsername(username.trim());
+  if (existing) {
+    return res.status(409).json({ detail: "Username already taken" });
+  }
+
+  const hash = await bcrypt.hash(password, 10);
+  const user = db.createUser(username.trim(), hash, Boolean(isAdmin));
+  return res.status(201).json(user);
+});
+
+app.patch("/admin/users/:userId/password", requireAdmin, async (req, res) => {
+  const userId = Number(req.params.userId);
+  const { password } = req.body || {};
+  if (typeof password !== "string" || password.length < 1) {
+    return res.status(422).json({ detail: "password is required" });
+  }
+
+  const user = db.getUserById(userId);
+  if (!user) {
+    return res.status(404).json({ detail: "User not found" });
+  }
+
+  const hash = await bcrypt.hash(password, 10);
+  db.updateUserPassword(userId, hash);
+  return res.json({ ok: true });
+});
+
+app.delete("/admin/users/:userId", requireAdmin, (req, res) => {
+  const userId = Number(req.params.userId);
+  if (userId === req.session.userId) {
+    return res.status(400).json({ detail: "Cannot delete your own account" });
+  }
+
+  const user = db.getUserById(userId);
+  if (!user) {
+    return res.status(404).json({ detail: "User not found" });
+  }
+
+  db.deleteUser(userId);
+  return res.status(204).send();
+});
+
+// ── Book & year routes ────────────────────────────────────────────────────────
+
+app.get("/api/u/:username/year/:year", (req, res) => {
+  const year = Number(req.params.year);
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+    return res.status(400).json({ detail: "Invalid year" });
+  }
+  const user = db.getUserByUsername(req.params.username);
+  if (!user) {
+    return res.status(404).json({ detail: "User not found" });
+  }
+  const payload = buildYearPayload(year, user.id, user.username, false, false);
+  return res.json(payload);
+});
+
 app.get("/api/year/:year", (req, res) => {
   const year = Number(req.params.year);
   if (!Number.isInteger(year) || year < 2000 || year > 2100) {
     return res.status(400).json({ detail: "Invalid year" });
   }
-  const payload = buildYearPayload(year, isAuthenticated(req));
+
+  if (!isAuthenticated(req)) {
+    // Return empty payload for unauthenticated visitors
+    return res.json({
+      books: [],
+      currently_reading: [],
+      want_to_read: [],
+      current_year: year,
+      all_years: [year],
+      stats: { count: 0, avg_rating: null, total_pages: 0, genres: {} },
+      genres: [],
+      goal: null,
+      pace: null,
+      reading_pace: null,
+      is_authenticated: false,
+      is_admin: false,
+      app_user: null,
+    });
+  }
+
+  const payload = buildYearPayload(
+    year,
+    req.session.userId,
+    req.session.username,
+    req.session.isAdmin,
+    true
+  );
   return res.json(payload);
 });
 
-app.get("/api/stats", (_req, res) => {
-  const stats = db.getGlobalStats(true);
+app.get("/api/stats", requireAuth, (req, res) => {
+  const stats = db.getGlobalStats(req.session.userId, true);
   return res.json(stats);
 });
 
@@ -164,9 +290,9 @@ app.get("/api/cover", async (req, res) => {
   return res.json(data);
 });
 
-app.get("/api/books/:bookId", (req, res) => {
+app.get("/api/books/:bookId", requireAuth, (req, res) => {
   const bookId = Number(req.params.bookId);
-  const book = db.getBook(bookId);
+  const book = db.getBook(bookId, req.session.userId);
   if (!book) {
     return res.status(404).json({ detail: "Book not found" });
   }
@@ -179,6 +305,7 @@ app.post("/api/books", requireAuth, (req, res) => {
     const data = compactUndefined(validated);
     data.title = titleCase(data.title);
     data.author = titleCase(data.author);
+    data.user_id = req.session.userId;
 
     normalizeBookState(data);
     const created = db.createBook(data);
@@ -204,7 +331,7 @@ app.patch("/api/books/:bookId", requireAuth, (req, res) => {
 
     normalizeBookState(data);
 
-    const updated = db.updateBook(bookId, data);
+    const updated = db.updateBook(bookId, req.session.userId, data);
     if (!updated) {
       return res.status(404).json({ detail: "Book not found" });
     }
@@ -216,7 +343,7 @@ app.patch("/api/books/:bookId", requireAuth, (req, res) => {
 
 app.delete("/api/books/:bookId", requireAuth, (req, res) => {
   const bookId = Number(req.params.bookId);
-  if (!db.deleteBook(bookId)) {
+  if (!db.deleteBook(bookId, req.session.userId)) {
     return res.status(404).json({ detail: "Book not found" });
   }
   return res.status(204).send();
@@ -227,7 +354,7 @@ app.put("/api/want-to-read/reorder", requireAuth, (req, res) => {
   if (!Array.isArray(ids) || ids.some((id) => !Number.isInteger(id))) {
     return res.status(422).json({ detail: "ids must be an array of integers" });
   }
-  db.reorderWantToRead(ids);
+  db.reorderWantToRead(ids, req.session.userId);
   return res.json({ ok: true });
 });
 
@@ -239,27 +366,21 @@ app.put("/api/goal/:year", requireAuth, (req, res) => {
 
   try {
     const { goal } = validateGoal(req.body || {});
-    db.setGoal(year, goal);
+    db.setGoal(year, goal, req.session.userId);
     return res.json({ year, goal });
   } catch (error) {
     return res.status(422).json({ detail: error.message || "Invalid payload" });
   }
 });
 
+// ── Static / SPA ──────────────────────────────────────────────────────────────
+
 if (process.env.NODE_ENV === "production") {
   const distPath = path.resolve(process.cwd(), "client", "dist");
   app.use(express.static(distPath));
 
-  app.get("/", (_req, res) => {
-    res.redirect(`/year/${new Date().getFullYear()}`);
-  });
-
-  app.get(["/year/:year", "*"], (_req, res) => {
+  app.get(["/", "/year/:year", "/admin", "/u/:username", "/u/:username/year/:year", "*"], (_req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
-  });
-} else {
-  app.get("/", (_req, res) => {
-    res.redirect(`${CLIENT_ORIGIN}/year/${new Date().getFullYear()}`);
   });
 }
 

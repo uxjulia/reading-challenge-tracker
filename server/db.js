@@ -1,11 +1,20 @@
 const Database = require("better-sqlite3");
+const bcrypt = require("bcryptjs");
 const path = require("path");
 
 const DB_PATH = path.resolve(process.cwd(), "books.db");
 
 const SCHEMA = `
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  is_admin INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+);
 CREATE TABLE IF NOT EXISTS books (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER REFERENCES users(id),
   year INTEGER NOT NULL,
   title TEXT NOT NULL,
   author TEXT NOT NULL,
@@ -23,8 +32,11 @@ CREATE TABLE IF NOT EXISTS books (
 );
 CREATE INDEX IF NOT EXISTS idx_books_year ON books(year);
 CREATE TABLE IF NOT EXISTS reading_goals (
-  year INTEGER PRIMARY KEY,
-  goal INTEGER NOT NULL CHECK(goal > 0)
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER REFERENCES users(id),
+  year INTEGER NOT NULL,
+  goal INTEGER NOT NULL CHECK(goal > 0),
+  UNIQUE(user_id, year)
 );
 `;
 
@@ -35,6 +47,10 @@ const MIGRATIONS = [
   "ALTER TABLE books ADD COLUMN date_started TEXT",
   "ALTER TABLE books ADD COLUMN page_count INTEGER",
   "ALTER TABLE books ADD COLUMN wtr_sort_order INTEGER",
+  "ALTER TABLE books ADD COLUMN user_id INTEGER REFERENCES users(id)",
+  "ALTER TABLE reading_goals ADD COLUMN user_id INTEGER",
+  "ALTER TABLE reading_goals ADD COLUMN id INTEGER",
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_goals_user_year ON reading_goals(user_id, year)",
 ];
 
 const db = new Database(DB_PATH);
@@ -48,14 +64,61 @@ function toSqlValue(value) {
   return value;
 }
 
+function migrateReadingGoals() {
+  // The old schema had `year INTEGER PRIMARY KEY`, which prevents multiple users
+  // having goals for the same year. Detect this and recreate the table if needed.
+  const cols = db.prepare("PRAGMA table_info(reading_goals)").all();
+  const yearCol = cols.find((c) => c.name === "year");
+  if (!yearCol || yearCol.pk !== 1) {
+    // Already on new schema (year is not the primary key).
+    return;
+  }
+  db.transaction(() => {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS reading_goals_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER REFERENCES users(id),
+        year INTEGER NOT NULL,
+        goal INTEGER NOT NULL CHECK(goal > 0),
+        UNIQUE(user_id, year)
+      )
+    `);
+    db.exec(
+      "INSERT INTO reading_goals_new (year, goal) SELECT year, goal FROM reading_goals"
+    );
+    db.exec("DROP TABLE reading_goals");
+    db.exec("ALTER TABLE reading_goals_new RENAME TO reading_goals");
+  })();
+}
+
 function initDb() {
   db.exec(SCHEMA);
+  migrateReadingGoals();
   for (const sql of MIGRATIONS) {
     try {
       db.exec(sql);
     } catch {
-      // Column already exists.
+      // Column/index already exists.
     }
+  }
+
+  // Seed admin user from env vars if no users exist yet.
+  const adminRow = db.prepare("SELECT COUNT(*) as c FROM users").get();
+  if (adminRow.c === 0 && process.env.APP_PASSWORD) {
+    const hash = bcrypt.hashSync(process.env.APP_PASSWORD, 10);
+    const username = process.env.USERNAME || "admin";
+    const info = db
+      .prepare(
+        "INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, 1)"
+      )
+      .run(username, hash);
+    const adminId = info.lastInsertRowid;
+    db.prepare("UPDATE books SET user_id = ? WHERE user_id IS NULL").run(
+      adminId
+    );
+    db.prepare(
+      "UPDATE reading_goals SET user_id = ? WHERE user_id IS NULL"
+    ).run(adminId);
   }
 }
 
@@ -69,62 +132,112 @@ function toBook(row) {
   };
 }
 
-function getBooksForYear(year, includePrivate = true) {
+// ── User management ──────────────────────────────────────────────────────────
+
+function getUserByUsername(username) {
+  return (
+    db
+      .prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?)")
+      .get(username) || null
+  );
+}
+
+function getUserById(id) {
+  return db.prepare("SELECT * FROM users WHERE id = ?").get(id) || null;
+}
+
+function getAllUsers() {
+  return db
+    .prepare(
+      "SELECT id, username, is_admin, created_at FROM users ORDER BY created_at ASC"
+    )
+    .all();
+}
+
+function createUser(username, passwordHash, isAdmin = false) {
+  const info = db
+    .prepare(
+      "INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, ?)"
+    )
+    .run(username, passwordHash, isAdmin ? 1 : 0);
+  return getUserById(info.lastInsertRowid);
+}
+
+function updateUserPassword(userId, passwordHash) {
+  db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(
+    passwordHash,
+    userId
+  );
+}
+
+function deleteUser(userId) {
+  db.transaction(() => {
+    db.prepare("DELETE FROM books WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM reading_goals WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM users WHERE id = ?").run(userId);
+  })();
+}
+
+// ── Books ─────────────────────────────────────────────────────────────────────
+
+function getBooksForYear(year, userId, includePrivate = true) {
   const privateFilter = includePrivate ? "" : "AND is_private = 0";
   const rows = db
     .prepare(
       `SELECT * FROM books
-       WHERE year = ? AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
+       WHERE year = ? AND user_id = ? AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
        ORDER BY
          CASE WHEN date_finished IS NULL THEN 1 ELSE 0 END,
          date_finished DESC,
          created_at DESC`
     )
-    .all(year);
+    .all(year, userId);
   return rows.map(toBook);
 }
 
-function getCurrentlyReading(year, includePrivate = true) {
+function getCurrentlyReading(year, userId, includePrivate = true) {
   const privateFilter = includePrivate ? "" : "AND is_private = 0";
   const rows = db
     .prepare(
       `SELECT * FROM books
-       WHERE year = ? AND currently_reading = 1 AND want_to_read = 0 ${privateFilter}
+       WHERE year = ? AND user_id = ? AND currently_reading = 1 AND want_to_read = 0 ${privateFilter}
        ORDER BY date_started DESC, created_at DESC`
     )
-    .all(year);
+    .all(year, userId);
   return rows.map(toBook);
 }
 
-function getWantToRead(year, includePrivate = true) {
+function getWantToRead(year, userId, includePrivate = true) {
   const privateFilter = includePrivate ? "" : "AND is_private = 0";
   const rows = db
     .prepare(
       `SELECT * FROM books
-       WHERE year = ? AND want_to_read = 1 ${privateFilter}
+       WHERE year = ? AND user_id = ? AND want_to_read = 1 ${privateFilter}
        ORDER BY
          CASE WHEN wtr_sort_order IS NULL THEN 1 ELSE 0 END,
          wtr_sort_order ASC,
          created_at DESC`
     )
-    .all(year);
+    .all(year, userId);
   return rows.map(toBook);
 }
 
-function reorderWantToRead(ids) {
+function reorderWantToRead(ids, userId) {
   const update = db.prepare(
-    "UPDATE books SET wtr_sort_order = ? WHERE id = ? AND want_to_read = 1"
+    "UPDATE books SET wtr_sort_order = ? WHERE id = ? AND user_id = ? AND want_to_read = 1"
   );
   db.transaction(() => {
-    ids.forEach((id, index) => update.run(index, id));
+    ids.forEach((id, index) => update.run(index, id, userId));
   })();
 }
 
-function getAllYears() {
+function getAllYears(userId) {
   const currentYear = new Date().getFullYear();
   const rows = db
-    .prepare("SELECT DISTINCT year FROM books ORDER BY year DESC")
-    .all();
+    .prepare(
+      "SELECT DISTINCT year FROM books WHERE user_id = ? ORDER BY year DESC"
+    )
+    .all(userId);
   const years = rows.map((r) => r.year);
   if (!years.includes(currentYear)) {
     years.unshift(currentYear);
@@ -132,23 +245,23 @@ function getAllYears() {
   return years;
 }
 
-function getYearStats(year, includePrivate = true) {
+function getYearStats(year, userId, includePrivate = true) {
   const privateFilter = includePrivate ? "" : "AND is_private = 0";
   const row = db
     .prepare(
       `SELECT COUNT(*) as count, AVG(rating) as avg_rating, SUM(page_count) as total_pages
        FROM books
-       WHERE year = ? AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}`
+       WHERE year = ? AND user_id = ? AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}`
     )
-    .get(year);
+    .get(year, userId);
 
   const genreRows = db
     .prepare(
       `SELECT genre, COUNT(*) as cnt FROM books
-       WHERE year = ? AND genre IS NOT NULL AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
+       WHERE year = ? AND user_id = ? AND genre IS NOT NULL AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
        GROUP BY genre ORDER BY cnt DESC`
     )
-    .all(year);
+    .all(year, userId);
 
   return {
     count: row.count,
@@ -158,17 +271,18 @@ function getYearStats(year, includePrivate = true) {
   };
 }
 
-function getAllGenres() {
+function getAllGenres(userId) {
   const rows = db
     .prepare(
-      "SELECT DISTINCT genre FROM books WHERE genre IS NOT NULL ORDER BY genre"
+      "SELECT DISTINCT genre FROM books WHERE user_id = ? AND genre IS NOT NULL ORDER BY genre"
     )
-    .all();
+    .all(userId);
   return rows.map((r) => r.genre);
 }
 
 function createBook(data) {
   const fields = [
+    "user_id",
     "year",
     "title",
     "author",
@@ -197,31 +311,34 @@ function createBook(data) {
   return toBook(row);
 }
 
-function getBook(bookId) {
-  const row = db.prepare("SELECT * FROM books WHERE id = ?").get(bookId);
+function getBook(bookId, userId) {
+  const row = db
+    .prepare("SELECT * FROM books WHERE id = ? AND user_id = ?")
+    .get(bookId, userId);
   return toBook(row);
 }
 
-function updateBook(bookId, data) {
+function updateBook(bookId, userId, data) {
   if (!data || !Object.keys(data).length) {
-    return getBook(bookId);
+    return getBook(bookId, userId);
   }
   const keys = Object.keys(data);
   const setClause = keys.map((k) => `${k} = ?`).join(", ");
   const values = keys.map((k) => toSqlValue(data[k]));
-  db.prepare(`UPDATE books SET ${setClause} WHERE id = ?`).run(
-    ...values,
-    bookId
-  );
-  return getBook(bookId);
+  db.prepare(
+    `UPDATE books SET ${setClause} WHERE id = ? AND user_id = ?`
+  ).run(...values, bookId, userId);
+  return getBook(bookId, userId);
 }
 
-function deleteBook(bookId) {
-  const info = db.prepare("DELETE FROM books WHERE id = ?").run(bookId);
+function deleteBook(bookId, userId) {
+  const info = db
+    .prepare("DELETE FROM books WHERE id = ? AND user_id = ?")
+    .run(bookId, userId);
   return info.changes > 0;
 }
 
-function getGlobalStats(includePrivate = false) {
+function getGlobalStats(userId, includePrivate = true) {
   const privateFilter = includePrivate ? "" : "AND is_private = 0";
 
   const totals = db
@@ -231,62 +348,62 @@ function getGlobalStats(includePrivate = false) {
               AVG(rating) as avg_rating,
               COUNT(DISTINCT author) as total_authors
        FROM books
-       WHERE currently_reading = 0 AND want_to_read = 0 ${privateFilter}`
+       WHERE user_id = ? AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}`
     )
-    .get();
+    .get(userId);
 
   const topAuthors = db
     .prepare(
       `SELECT author, COUNT(*) as count, ROUND(AVG(rating), 1) as avg_rating
        FROM books
-       WHERE currently_reading = 0 AND want_to_read = 0 ${privateFilter}
+       WHERE user_id = ? AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
        GROUP BY author
        ORDER BY count DESC, avg_rating DESC
        LIMIT 10`
     )
-    .all();
+    .all(userId);
 
   const topGenres = db
     .prepare(
       `SELECT genre, COUNT(*) as count
        FROM books
-       WHERE genre IS NOT NULL AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
+       WHERE user_id = ? AND genre IS NOT NULL AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
        GROUP BY genre
        ORDER BY count DESC
        LIMIT 10`
     )
-    .all();
+    .all(userId);
 
   const booksByYear = db
     .prepare(
       `SELECT year, COUNT(*) as count
        FROM books
-       WHERE currently_reading = 0 AND want_to_read = 0 ${privateFilter}
+       WHERE user_id = ? AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
        GROUP BY year
        ORDER BY count DESC`
     )
-    .all();
+    .all(userId);
 
   const topMonth = db
     .prepare(
       `SELECT strftime('%m', date_finished) as month, COUNT(*) as count
        FROM books
-       WHERE date_finished IS NOT NULL AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
+       WHERE user_id = ? AND date_finished IS NOT NULL AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
        GROUP BY month
        ORDER BY count DESC
        LIMIT 1`
     )
-    .get();
+    .get(userId);
 
   const longestBook = db
     .prepare(
       `SELECT title, author, page_count
        FROM books
-       WHERE page_count IS NOT NULL AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
+       WHERE user_id = ? AND page_count IS NOT NULL AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
        ORDER BY page_count DESC
        LIMIT 1`
     )
-    .get();
+    .get(userId);
 
   return {
     totals: {
@@ -303,27 +420,39 @@ function getGlobalStats(includePrivate = false) {
   };
 }
 
-function getGoal(year) {
+function getGoal(year, userId) {
   const row = db
-    .prepare("SELECT goal FROM reading_goals WHERE year = ?")
-    .get(year);
+    .prepare(
+      "SELECT goal FROM reading_goals WHERE year = ? AND user_id = ?"
+    )
+    .get(year, userId);
   return row ? row.goal : null;
 }
 
-function setGoal(year, goal) {
+function setGoal(year, goal, userId) {
   if (goal === 0) {
-    db.prepare("DELETE FROM reading_goals WHERE year = ?").run(year);
+    db.prepare(
+      "DELETE FROM reading_goals WHERE year = ? AND user_id = ?"
+    ).run(year, userId);
     return 0;
   }
   db.prepare(
-    `INSERT INTO reading_goals (year, goal) VALUES (?, ?)
-     ON CONFLICT(year) DO UPDATE SET goal = excluded.goal`
-  ).run(year, goal);
+    `INSERT INTO reading_goals (year, goal, user_id) VALUES (?, ?, ?)
+     ON CONFLICT(user_id, year) DO UPDATE SET goal = excluded.goal`
+  ).run(year, goal, userId);
   return goal;
 }
 
 module.exports = {
   initDb,
+  // Users
+  getUserByUsername,
+  getUserById,
+  getAllUsers,
+  createUser,
+  updateUserPassword,
+  deleteUser,
+  // Books
   getBooksForYear,
   getCurrentlyReading,
   getWantToRead,
@@ -336,6 +465,7 @@ module.exports = {
   getBook,
   updateBook,
   deleteBook,
+  // Goals
   getGoal,
   setGoal,
 };

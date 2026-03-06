@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import {
   DndContext,
@@ -138,6 +138,7 @@ function YearPage() {
   const params = useParams();
   const navigate = useNavigate();
   const year = Number(params.year || currentYear);
+  const publicUser = params.username || null;
 
   const [loading, setLoading] = useState(true);
   const [showLoading, setShowLoading] = useState(false);
@@ -150,14 +151,25 @@ function YearPage() {
   const [goalEditing, setGoalEditing] = useState(false);
   const [goalDraft, setGoalDraft] = useState("");
   const [wtrBooks, setWtrBooks] = useState([]);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   const sensors = useSensors(useSensor(PointerSensor));
+
+  const apiUrl = publicUser
+    ? `/api/u/${publicUser}/year/${year}`
+    : `/api/year/${year}`;
+
+  function yearLink(yr) {
+    return publicUser ? `/u/${publicUser}/year/${yr}` : `/year/${yr}`;
+  }
 
   async function load() {
     setLoading(true);
     setPageError("");
     try {
-      const result = await apiFetch(`/api/year/${year}`);
+      const result = await apiFetch(apiUrl);
       setData(result);
       setGoalDraft(result.goal ?? "");
     } catch (error) {
@@ -170,7 +182,7 @@ function YearPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [year]);
+  }, [year, publicUser]);
 
   useEffect(() => {
     if (!loading) {
@@ -220,6 +232,17 @@ function YearPage() {
     };
   }, [bookModalOpen, loginOpen, data]);
 
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
+
   const headerTitle = useMemo(() => {
     const appUser = data?.app_user || "My";
     return appUser !== "My"
@@ -256,10 +279,10 @@ function YearPage() {
     await load();
   }
 
-  async function login(password) {
+  async function login(username, password) {
     await apiFetch("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ username, password }),
     });
     await load();
   }
@@ -349,21 +372,81 @@ function YearPage() {
       <header className="app-header">
         <h1>{headerTitle}</h1>
         <div className="header-auth">
-          <button
-            className="btn-auth btn-stats-icon"
-            onClick={() => setStatsOpen(true)}
-            aria-label="View reading stats"
-            type="button"
-          >
-            <span className="material-symbols-outlined" aria-hidden="true">
-              bar_chart
-            </span>
-          </button>
-          {data.is_authenticated ? (
-            <button className="btn-auth" onClick={logout}>
-              Logout
+          {data.is_authenticated && (
+            <button
+              className="btn-auth btn-stats-icon"
+              onClick={() => setStatsOpen(true)}
+              aria-label="View reading stats"
+              type="button"
+            >
+              <span className="material-symbols-outlined" aria-hidden="true">
+                bar_chart
+              </span>
             </button>
-          ) : (
+          )}
+          {data.is_authenticated ? (
+            <div className="user-menu" ref={menuRef}>
+              <button
+                className="btn-auth btn-user-menu"
+                onClick={() => setMenuOpen((o) => !o)}
+                aria-haspopup="true"
+                aria-expanded={menuOpen}
+              >
+                <span className="material-symbols-outlined" aria-hidden="true">
+                  account_circle
+                </span>
+                <span className="user-menu-name">{data.app_user}</span>
+                <span className="material-symbols-outlined user-menu-chevron" aria-hidden="true">
+                  expand_more
+                </span>
+              </button>
+              {menuOpen && (
+                <div className="user-menu-dropdown" role="menu">
+                  <button
+                    className="user-menu-item"
+                    role="menuitem"
+                    onClick={() => {
+                      const url = `${window.location.origin}/u/${data.app_user}`;
+                      navigator.clipboard.writeText(url);
+                      setShareCopied(true);
+                      setTimeout(() => {
+                        setShareCopied(false);
+                        setMenuOpen(false);
+                      }, 1500);
+                    }}
+                  >
+                    <span className="material-symbols-outlined" aria-hidden="true">
+                      {shareCopied ? "check" : "share"}
+                    </span>
+                    {shareCopied ? "Copied!" : "Copy public link"}
+                  </button>
+                  {data.is_admin && (
+                    <Link
+                      to="/admin"
+                      className="user-menu-item"
+                      role="menuitem"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <span className="material-symbols-outlined" aria-hidden="true">
+                        manage_accounts
+                      </span>
+                      Admin
+                    </Link>
+                  )}
+                  <button
+                    className="user-menu-item user-menu-item--logout"
+                    role="menuitem"
+                    onClick={() => { setMenuOpen(false); logout(); }}
+                  >
+                    <span className="material-symbols-outlined" aria-hidden="true">
+                      logout
+                    </span>
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : publicUser ? null : (
             <button className="btn-auth" onClick={() => setLoginOpen(true)}>
               Login
             </button>
@@ -375,7 +458,7 @@ function YearPage() {
         {data.all_years.map((yr) => (
           <Link
             key={yr}
-            to={`/year/${yr}`}
+            to={yearLink(yr)}
             className={`tab ${yr === year ? "active" : ""}`}
           >
             {yr}

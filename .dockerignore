@@ -1,0 +1,10 @@
+node_modules/
+client/node_modules/
+client/dist/
+books.db
+*.db-shm
+*.db-wal
+.env
+.git/
+.claude/
+ecosystem.config.js

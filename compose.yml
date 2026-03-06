@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # Persists the SQLite database across container rebuilds.
+      # If books.db doesn't exist yet, create it first: touch books.db
+      - ./books.db:/app/books.db
+    restart: unless-stopped

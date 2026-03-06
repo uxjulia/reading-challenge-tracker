@@ -12,7 +12,7 @@ A self-hosted reading tracker with a Node.js/Express API, SQLite storage, and a 
 - Cover lookup from Google Books and Open Library
 - Book stats (all-time totals, top authors, top genres)
 - Drag-and-drop reordering of the Want to Read list
-- SQLite persistence (`books.db`)
+- SQLite persistence (`data/books.db`)
 
 ## Tech Stack
 
@@ -105,10 +105,6 @@ You can use a process manager like **PM2**, a native **systemd** service, or **D
 Requires [Docker](https://docs.docker.com/get-docker/) with the Compose plugin.
 
 ```bash
-# If books.db doesn't exist yet on the host:
-touch data/books.db
-
-# Build the image and start the container
 docker compose up --build -d
 ```
 
@@ -118,7 +114,7 @@ To redeploy after pulling changes:
 docker compose up --build -d
 ```
 
-The `--build` flag rebuilds the image (including the frontend build step) and restarts the container. The database is persisted via a bind mount to `./books.db` on the host.
+The `--build` flag rebuilds the image (including the frontend build step) and restarts the container. The database is persisted via a bind mount to `./data/books.db` on the host.
 
 **Option B: Using PM2**
 
@@ -195,8 +191,8 @@ In production, Express serves the built React app from `client/dist`.
 
 ## Data Backup
 
-All reading data is in `books.db`:
+All reading data is in `data/books.db`:
 
 ```bash
-cp books.db books-backup-$(date +%Y%m%d).db
+cp data/books.db books-backup-$(date +%Y%m%d).db
 ```

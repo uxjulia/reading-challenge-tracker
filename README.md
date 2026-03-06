@@ -98,9 +98,29 @@ npm run build
 npm run start
 ```
 
-You can use a process manager like **PM2**, or a native **systemd** service to keep the app running in the background.
+You can use a process manager like **PM2**, a native **systemd** service, or **Docker** to keep the app running in the background.
 
-**Option A: Using PM2**
+**Option A: Docker**
+
+Requires [Docker](https://docs.docker.com/get-docker/) with the Compose plugin.
+
+```bash
+# If books.db doesn't exist yet on the host:
+touch books.db
+
+# Build the image and start the container
+docker compose up --build -d
+```
+
+To redeploy after pulling changes:
+
+```bash
+docker compose up --build -d
+```
+
+The `--build` flag rebuilds the image (including the frontend build step) and restarts the container. The database is persisted via a bind mount to `./books.db` on the host.
+
+**Option B: Using PM2**
 
 ```bash
 # Install PM2 globally
@@ -116,7 +136,7 @@ pm2 save
 pm2 startup
 ```
 
-**Option B: Using systemd**
+**Option C: Using systemd**
 
 Create a service file:
 

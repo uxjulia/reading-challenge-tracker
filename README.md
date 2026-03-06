@@ -106,7 +106,7 @@ Requires [Docker](https://docs.docker.com/get-docker/) with the Compose plugin.
 
 ```bash
 # If books.db doesn't exist yet on the host:
-touch books.db
+touch data/books.db
 
 # Build the image and start the container
 docker compose up --build -d

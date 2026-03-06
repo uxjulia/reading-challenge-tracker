@@ -2,7 +2,7 @@ const Database = require("better-sqlite3");
 const bcrypt = require("bcryptjs");
 const path = require("path");
 
-const DB_PATH = path.resolve(process.cwd(), "books.db");
+const DB_PATH = path.resolve(process.cwd(), "data/books.db");
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
@@ -325,9 +325,11 @@ function updateBook(bookId, userId, data) {
   const keys = Object.keys(data);
   const setClause = keys.map((k) => `${k} = ?`).join(", ");
   const values = keys.map((k) => toSqlValue(data[k]));
-  db.prepare(
-    `UPDATE books SET ${setClause} WHERE id = ? AND user_id = ?`
-  ).run(...values, bookId, userId);
+  db.prepare(`UPDATE books SET ${setClause} WHERE id = ? AND user_id = ?`).run(
+    ...values,
+    bookId,
+    userId
+  );
   return getBook(bookId, userId);
 }
 
@@ -422,18 +424,17 @@ function getGlobalStats(userId, includePrivate = true) {
 
 function getGoal(year, userId) {
   const row = db
-    .prepare(
-      "SELECT goal FROM reading_goals WHERE year = ? AND user_id = ?"
-    )
+    .prepare("SELECT goal FROM reading_goals WHERE year = ? AND user_id = ?")
     .get(year, userId);
   return row ? row.goal : null;
 }
 
 function setGoal(year, goal, userId) {
   if (goal === 0) {
-    db.prepare(
-      "DELETE FROM reading_goals WHERE year = ? AND user_id = ?"
-    ).run(year, userId);
+    db.prepare("DELETE FROM reading_goals WHERE year = ? AND user_id = ?").run(
+      year,
+      userId
+    );
     return 0;
   }
   db.prepare(

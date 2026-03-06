@@ -1,12 +1,17 @@
+networks:
+  frontend:
+    external: true
+
 services:
   app:
+    container_name: reading-challenge
     build: .
-    ports:
-      - "8000:8000"
+    networks:
+      - frontend
     env_file:
       - .env
     volumes:
       # Persists the SQLite database across container rebuilds.
       # If books.db doesn't exist yet, create it first: touch books.db
-      - ./books.db:/app/books.db
+      - /home/pi/code/reading-challenge/data:/app/data
     restart: unless-stopped

@@ -19,7 +19,7 @@ function BookModal({
     author: "",
     date_finished: "",
     rating: 0,
-    genre: "",
+    genre: [],
     notes: "",
     cover_url: "",
     is_private: false,
@@ -37,6 +37,7 @@ function BookModal({
   const [loadingCover, setLoadingCover] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [genreInput, setGenreInput] = useState("");
   const [genreOpen, setGenreOpen] = useState(false);
   const [genreIndex, setGenreIndex] = useState(-1);
   const titleRef = useRef(null);
@@ -64,7 +65,7 @@ function BookModal({
       author: book.author || "",
       date_finished: book.date_finished || today,
       rating: book.rating || 0,
-      genre: book.genre || "",
+      genre: book.genre || [],
       notes: book.notes || "",
       cover_url: book.cover_url || "",
       is_private: Boolean(book.is_private),
@@ -93,6 +94,7 @@ function BookModal({
     setStatusClass("");
     setError("");
     setSaving(false);
+    setGenreInput("");
     if (!book) {
       const today = getToday();
       const currentYear = new Date().getFullYear();
@@ -105,7 +107,7 @@ function BookModal({
         author: "",
         date_finished: defaultFinishDate,
         rating: 0,
-        genre: "",
+        genre: [],
         notes: "",
         cover_url: "",
         is_private: false,
@@ -197,7 +199,7 @@ function BookModal({
       date_finished: isReading || isWant ? null : form.date_finished || null,
       date_started: isReading ? form.date_started || null : null,
       rating: isReading || isWant ? null : form.rating || null,
-      genre: isReading || isWant ? null : form.genre.trim() || null,
+      genre: isReading || isWant ? null : form.genre.length > 0 ? form.genre : null,
       notes: isReading || isWant ? null : form.notes.trim() || null,
       cover_url: form.cover_url.trim() || null,
       is_private: Boolean(form.is_private),
@@ -223,7 +225,7 @@ function BookModal({
         want_to_read: true,
         currently_reading: false,
         rating: 0,
-        genre: "",
+        genre: [],
         notes: "",
       }));
       return;
@@ -235,7 +237,7 @@ function BookModal({
         want_to_read: false,
         currently_reading: true,
         rating: 0,
-        genre: "",
+        genre: [],
         notes: "",
       }));
       return;
@@ -483,70 +485,112 @@ function BookModal({
               </div>
 
               <div className="form-group genre-autocomplete">
-                <label htmlFor="f-genre">Genre</label>
-                <input
-                  type="text"
-                  id="f-genre"
-                  value={form.genre}
-                  onChange={(e) => {
-                    setForm((prev) => ({ ...prev, genre: e.target.value }));
-                    setGenreOpen(true);
-                    setGenreIndex(-1);
-                  }}
-                  onFocus={() => setGenreOpen(true)}
-                  onBlur={() => setTimeout(() => setGenreOpen(false), 150)}
-                  onKeyDown={(e) => {
-                    if (!genreOpen) return;
-                    const filtered = genres.filter((g) =>
-                      g.toLowerCase().includes(form.genre.toLowerCase())
-                    );
-                    if (e.key === "ArrowDown") {
-                      e.preventDefault();
-                      setGenreIndex((i) =>
-                        Math.min(i + 1, filtered.length - 1)
-                      );
-                    } else if (e.key === "ArrowUp") {
-                      e.preventDefault();
-                      setGenreIndex((i) => Math.max(i - 1, 0));
-                    } else if (e.key === "Enter" && genreIndex >= 0) {
-                      e.preventDefault();
+                <label>Genre</label>
+                {(() => {
+                  const filtered = genres.filter(
+                    (g) =>
+                      g.toLowerCase().includes(genreInput.toLowerCase()) &&
+                      !form.genre.includes(g)
+                  );
+                  function addTag(raw) {
+                    const tag = raw.trim().replace(/,+$/, "").trim();
+                    if (tag && !form.genre.includes(tag)) {
                       setForm((prev) => ({
                         ...prev,
-                        genre: filtered[genreIndex],
+                        genre: [...prev.genre, tag],
                       }));
-                      setGenreOpen(false);
-                      setGenreIndex(-1);
-                    } else if (e.key === "Escape") {
-                      setGenreOpen(false);
-                      setGenreIndex(-1);
                     }
-                  }}
-                  placeholder="e.g. Fantasy"
-                  autoComplete="off"
-                />
-                {genreOpen &&
-                  (() => {
-                    const filtered = genres.filter((g) =>
-                      g.toLowerCase().includes(form.genre.toLowerCase())
-                    );
-                    return filtered.length > 0 ? (
-                      <ul className="genre-suggestions">
-                        {filtered.map((genre, i) => (
-                          <li
-                            key={genre}
-                            className={i === genreIndex ? "active" : ""}
-                            onMouseDown={() => {
-                              setForm((prev) => ({ ...prev, genre }));
+                    setGenreInput("");
+                    setGenreOpen(false);
+                    setGenreIndex(-1);
+                  }
+                  return (
+                    <>
+                      <div className="genre-tag-input">
+                        {form.genre.map((g) => (
+                          <span key={g} className="genre-tag">
+                            {g}
+                            <button
+                              type="button"
+                              aria-label={`Remove ${g}`}
+                              onClick={() =>
+                                setForm((prev) => ({
+                                  ...prev,
+                                  genre: prev.genre.filter((x) => x !== g),
+                                }))
+                              }
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                        <input
+                          type="text"
+                          id="f-genre"
+                          value={genreInput}
+                          onChange={(e) => {
+                            setGenreInput(e.target.value);
+                            setGenreOpen(true);
+                            setGenreIndex(-1);
+                          }}
+                          onFocus={() => setGenreOpen(true)}
+                          onBlur={() =>
+                            setTimeout(() => setGenreOpen(false), 150)
+                          }
+                          onKeyDown={(e) => {
+                            if (
+                              (e.key === "Enter" || e.key === ",") &&
+                              genreIndex < 0
+                            ) {
+                              e.preventDefault();
+                              if (genreInput.trim()) addTag(genreInput);
+                              return;
+                            }
+                            if (e.key === "Backspace" && genreInput === "") {
+                              setForm((prev) => ({
+                                ...prev,
+                                genre: prev.genre.slice(0, -1),
+                              }));
+                              return;
+                            }
+                            if (e.key === "ArrowDown") {
+                              e.preventDefault();
+                              setGenreIndex((i) =>
+                                Math.min(i + 1, filtered.length - 1)
+                              );
+                            } else if (e.key === "ArrowUp") {
+                              e.preventDefault();
+                              setGenreIndex((i) => Math.max(i - 1, 0));
+                            } else if (e.key === "Enter" && genreIndex >= 0) {
+                              e.preventDefault();
+                              addTag(filtered[genreIndex]);
+                            } else if (e.key === "Escape") {
                               setGenreOpen(false);
                               setGenreIndex(-1);
-                            }}
-                          >
-                            {genre}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null;
-                  })()}
+                            }
+                          }}
+                          placeholder={
+                            form.genre.length === 0 ? "e.g. Fantasy" : ""
+                          }
+                          autoComplete="off"
+                        />
+                      </div>
+                      {genreOpen && filtered.length > 0 && (
+                        <ul className="genre-suggestions">
+                          {filtered.map((g, i) => (
+                            <li
+                              key={g}
+                              className={i === genreIndex ? "active" : ""}
+                              onMouseDown={() => addTag(g)}
+                            >
+                              {g}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
           )}

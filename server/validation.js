@@ -1,3 +1,17 @@
+function asGenreTags(value) {
+  if (value === undefined) return undefined;
+  if (value === null || (Array.isArray(value) && value.length === 0)) return null;
+  if (!Array.isArray(value)) throw new Error("genre must be an array");
+  return value.map((g) => {
+    if (typeof g !== "string") throw new Error("Each genre must be a string");
+    const trimmed = g.trim();
+    if (!trimmed) throw new Error("Genre tag cannot be empty");
+    if (trimmed.length > 100)
+      throw new Error("Each genre must be 100 characters or fewer");
+    return trimmed;
+  });
+}
+
 function asOptionalString(value, maxLength) {
   if (value === undefined) return undefined;
   if (value === null || value === "") return null;
@@ -55,7 +69,7 @@ function validateCreate(body) {
     author: asRequiredString(body.author, 500),
     date_finished: asOptionalDate(body.date_finished),
     rating: asOptionalNumber(body.rating, { min: 0.5, max: 5 }),
-    genre: asOptionalString(body.genre, 100),
+    genre: asGenreTags(body.genre),
     notes: asOptionalString(body.notes, 5000),
     cover_url: asOptionalString(body.cover_url, 2000),
     is_private: asOptionalBool(body.is_private) ?? false,
@@ -85,7 +99,7 @@ function validateUpdate(body) {
         : asRequiredString(body.author, 500),
     date_finished: asOptionalDate(body.date_finished),
     rating: asOptionalNumber(body.rating, { min: 0.5, max: 5 }),
-    genre: asOptionalString(body.genre, 100),
+    genre: asGenreTags(body.genre),
     notes: asOptionalString(body.notes, 5000),
     cover_url: asOptionalString(body.cover_url, 2000),
     is_private: asOptionalBool(body.is_private),

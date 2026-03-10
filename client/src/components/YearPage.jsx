@@ -735,8 +735,8 @@ function YearPage() {
                   <strong className="overlay-title">{book.title}</strong>
                   <span className="overlay-author">{book.author}</span>
                   <RatingStars value={book.rating} />
-                  {book.genre && (
-                    <span className="overlay-genre">{book.genre}</span>
+                  {book.genre && book.genre.length > 0 && (
+                    <span className="overlay-genre">{book.genre.join(", ")}</span>
                   )}
                   {book.date_finished && (
                     <span className="overlay-date">

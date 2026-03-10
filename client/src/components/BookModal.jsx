@@ -199,7 +199,8 @@ function BookModal({
       date_finished: isReading || isWant ? null : form.date_finished || null,
       date_started: isReading ? form.date_started || null : null,
       rating: isReading || isWant ? null : form.rating || null,
-      genre: isReading || isWant ? null : form.genre.length > 0 ? form.genre : null,
+      genre:
+        isReading || isWant ? null : form.genre.length > 0 ? form.genre : null,
       notes: isReading || isWant ? null : form.notes.trim() || null,
       cover_url: form.cover_url.trim() || null,
       is_private: Boolean(form.is_private),
@@ -659,7 +660,7 @@ function BookModal({
                     }))
                   }
                 />
-                <span style={{ marginRight: "8px" }}>I have the audiobook</span>
+                <span style={{ marginRight: "8px" }}>Audiobook</span>
                 <span className="material-symbols-rounded">headphones</span>
               </label>
             </div>

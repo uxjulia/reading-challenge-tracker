@@ -40,6 +40,7 @@ function BookModal({
   const [genreInput, setGenreInput] = useState("");
   const [genreOpen, setGenreOpen] = useState(false);
   const [genreIndex, setGenreIndex] = useState(-1);
+  const [suggestedGenres, setSuggestedGenres] = useState([]);
   const titleRef = useRef(null);
 
   const mode = book ? "edit" : "add";
@@ -101,6 +102,7 @@ function BookModal({
       const defaultFinishDate =
         Number(initialYear) === currentYear ? today : `${initialYear}-12-31`;
       setCoverOptions([]);
+      setSuggestedGenres([]);
       setForm({
         year: initialYear,
         title: "",
@@ -163,6 +165,9 @@ function BookModal({
         cover_url: allCovers[0].url,
         page_count: prev.page_count || allCovers[0].page_count || "",
       }));
+      if (data.genres?.length) {
+        setSuggestedGenres(data.genres);
+      }
 
       const sources = [];
       if (googleCovers.length) sources.push("Google Books");
@@ -588,6 +593,26 @@ function BookModal({
                             </li>
                           ))}
                         </ul>
+                      )}
+                      {suggestedGenres.filter((g) => !form.genre.includes(g))
+                        .length > 0 && (
+                        <div className="genre-suggestions-row">
+                          <span className="genre-suggestions-label">
+                            Suggested:
+                          </span>
+                          {suggestedGenres
+                            .filter((g) => !form.genre.includes(g))
+                            .map((g) => (
+                              <button
+                                key={g}
+                                type="button"
+                                className="genre-suggestion-pill"
+                                onMouseDown={() => addTag(g)}
+                              >
+                                {g}
+                              </button>
+                            ))}
+                        </div>
                       )}
                     </>
                   );

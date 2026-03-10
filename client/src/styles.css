@@ -1228,6 +1228,31 @@ a.btn-auth {
   background: var(--accent);
   color: #fff;
 }
+.genre-suggestions-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.genre-suggestions-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.genre-suggestion-pill {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 2px 10px;
+  transition: border-color 0.15s, color 0.15s;
+}
+.genre-suggestion-pill:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 
 input[type="date"] {
   color-scheme: dark;

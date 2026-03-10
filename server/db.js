@@ -47,6 +47,7 @@ const MIGRATIONS = [
   "ALTER TABLE books ADD COLUMN date_started TEXT",
   "ALTER TABLE books ADD COLUMN page_count INTEGER",
   "ALTER TABLE books ADD COLUMN wtr_sort_order INTEGER",
+  "ALTER TABLE books ADD COLUMN has_audiobook INTEGER NOT NULL DEFAULT 0",
   "ALTER TABLE books ADD COLUMN user_id INTEGER REFERENCES users(id)",
   "ALTER TABLE reading_goals ADD COLUMN user_id INTEGER",
   "ALTER TABLE reading_goals ADD COLUMN id INTEGER",
@@ -62,6 +63,11 @@ function toSqlValue(value) {
     return value ? 1 : 0;
   }
   return value;
+}
+
+function serializeGenre(genre) {
+  if (!genre || (Array.isArray(genre) && genre.length === 0)) return null;
+  return JSON.stringify(genre);
 }
 
 function migrateReadingGoals() {
@@ -91,9 +97,30 @@ function migrateReadingGoals() {
   })();
 }
 
+function migrateGenresToJson() {
+  const rows = db
+    .prepare("SELECT id, genre FROM books WHERE genre IS NOT NULL")
+    .all();
+  const update = db.prepare("UPDATE books SET genre = ? WHERE id = ?");
+  for (const row of rows) {
+    try {
+      const parsed = JSON.parse(row.genre);
+      if (Array.isArray(parsed)) continue; // already migrated
+    } catch {
+      // not JSON — migrate
+    }
+    const tags = row.genre
+      .split(/,\s*/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    update.run(JSON.stringify(tags), row.id);
+  }
+}
+
 function initDb() {
   db.exec(SCHEMA);
   migrateReadingGoals();
+  migrateGenresToJson();
   for (const sql of MIGRATIONS) {
     try {
       db.exec(sql);
@@ -124,11 +151,23 @@ function initDb() {
 
 function toBook(row) {
   if (!row) return null;
+  let genre = null;
+  if (row.genre) {
+    try {
+      const parsed = JSON.parse(row.genre);
+      genre = Array.isArray(parsed) ? parsed : [parsed];
+    } catch {
+      // legacy plain string — wrap in array
+      genre = [row.genre];
+    }
+  }
   return {
     ...row,
+    genre,
     is_private: Boolean(row.is_private),
     currently_reading: Boolean(row.currently_reading),
     want_to_read: Boolean(row.want_to_read),
+    has_audiobook: Boolean(row.has_audiobook),
   };
 }
 
@@ -257,9 +296,10 @@ function getYearStats(year, userId, includePrivate = true) {
 
   const genreRows = db
     .prepare(
-      `SELECT genre, COUNT(*) as cnt FROM books
+      `SELECT j.value as genre, COUNT(*) as cnt
+       FROM books, json_each(books.genre) j
        WHERE year = ? AND user_id = ? AND genre IS NOT NULL AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
-       GROUP BY genre ORDER BY cnt DESC`
+       GROUP BY j.value ORDER BY cnt DESC`
     )
     .all(year, userId);
 
@@ -274,7 +314,10 @@ function getYearStats(year, userId, includePrivate = true) {
 function getAllGenres(userId) {
   const rows = db
     .prepare(
-      "SELECT DISTINCT genre FROM books WHERE user_id = ? AND genre IS NOT NULL ORDER BY genre"
+      `SELECT DISTINCT j.value as genre
+       FROM books, json_each(books.genre) j
+       WHERE user_id = ? AND genre IS NOT NULL
+       ORDER BY j.value`
     )
     .all(userId);
   return rows.map((r) => r.genre);
@@ -296,11 +339,15 @@ function createBook(data) {
     "want_to_read",
     "date_started",
     "page_count",
+    "has_audiobook",
   ];
 
-  const cols = fields.filter((f) => data[f] !== undefined && data[f] !== null);
+  const processed = { ...data, genre: serializeGenre(data.genre) };
+  const cols = fields.filter(
+    (f) => processed[f] !== undefined && processed[f] !== null
+  );
   const placeholders = cols.map(() => "?").join(", ");
-  const values = cols.map((c) => toSqlValue(data[c]));
+  const values = cols.map((c) => toSqlValue(processed[c]));
 
   const info = db
     .prepare(`INSERT INTO books (${cols.join(", ")}) VALUES (${placeholders})`)
@@ -322,9 +369,10 @@ function updateBook(bookId, userId, data) {
   if (!data || !Object.keys(data).length) {
     return getBook(bookId, userId);
   }
-  const keys = Object.keys(data);
+  const processed = { ...data, ...(data.genre !== undefined && { genre: serializeGenre(data.genre) }) };
+  const keys = Object.keys(processed);
   const setClause = keys.map((k) => `${k} = ?`).join(", ");
-  const values = keys.map((k) => toSqlValue(data[k]));
+  const values = keys.map((k) => toSqlValue(processed[k]));
   db.prepare(`UPDATE books SET ${setClause} WHERE id = ? AND user_id = ?`).run(
     ...values,
     bookId,
@@ -361,18 +409,29 @@ function getGlobalStats(userId, includePrivate = true) {
        WHERE user_id = ? AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
        GROUP BY author
        ORDER BY count DESC, avg_rating DESC
-       LIMIT 10`
+       LIMIT 5`
+    )
+    .all(userId);
+
+  const topRatedAuthors = db
+    .prepare(
+      `SELECT author, COUNT(*) as count, ROUND(AVG(rating), 1) as avg_rating
+       FROM books
+       WHERE user_id = ? AND rating IS NOT NULL AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
+       GROUP BY author
+       ORDER BY avg_rating DESC, count DESC
+       LIMIT 5`
     )
     .all(userId);
 
   const topGenres = db
     .prepare(
-      `SELECT genre, COUNT(*) as count
-       FROM books
+      `SELECT j.value as genre, COUNT(*) as count
+       FROM books, json_each(books.genre) j
        WHERE user_id = ? AND genre IS NOT NULL AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
-       GROUP BY genre
+       GROUP BY j.value
        ORDER BY count DESC
-       LIMIT 10`
+       LIMIT 5`
     )
     .all(userId);
 
@@ -415,6 +474,7 @@ function getGlobalStats(userId, includePrivate = true) {
       authors: totals.total_authors,
     },
     top_authors: topAuthors,
+    top_rated_authors: topRatedAuthors,
     top_genres: topGenres,
     books_by_year: booksByYear,
     top_month: topMonth || null,

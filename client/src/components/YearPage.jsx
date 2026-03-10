@@ -109,7 +109,17 @@ function SortableWtrBook({ book, isAuthenticated, onStartReading, onEdit }) {
         )}
       </div>
       <div className="wtr-info">
-        <strong className="wtr-title">{book.title}</strong>
+        <strong className="wtr-title">
+          {book.title}
+          {book.has_audiobook && (
+            <span
+              className="material-symbols-rounded wtr-audiobook-icon"
+              title="Audiobook available"
+            >
+              headphones
+            </span>
+          )}
+        </strong>
         <span className="wtr-author">{book.author}</span>
         {isAuthenticated && (
           <div className="wtr-actions">
@@ -396,7 +406,10 @@ function YearPage() {
                   account_circle
                 </span>
                 <span className="user-menu-name">{data.app_user}</span>
-                <span className="material-symbols-outlined user-menu-chevron" aria-hidden="true">
+                <span
+                  className="material-symbols-outlined user-menu-chevron"
+                  aria-hidden="true"
+                >
                   expand_more
                 </span>
               </button>
@@ -415,7 +428,10 @@ function YearPage() {
                       }, 1500);
                     }}
                   >
-                    <span className="material-symbols-outlined" aria-hidden="true">
+                    <span
+                      className="material-symbols-outlined"
+                      aria-hidden="true"
+                    >
                       {shareCopied ? "check" : "share"}
                     </span>
                     {shareCopied ? "Copied!" : "Copy public link"}
@@ -427,7 +443,10 @@ function YearPage() {
                       role="menuitem"
                       onClick={() => setMenuOpen(false)}
                     >
-                      <span className="material-symbols-outlined" aria-hidden="true">
+                      <span
+                        className="material-symbols-outlined"
+                        aria-hidden="true"
+                      >
                         manage_accounts
                       </span>
                       Admin
@@ -436,9 +455,15 @@ function YearPage() {
                   <button
                     className="user-menu-item user-menu-item--logout"
                     role="menuitem"
-                    onClick={() => { setMenuOpen(false); logout(); }}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      logout();
+                    }}
                   >
-                    <span className="material-symbols-outlined" aria-hidden="true">
+                    <span
+                      className="material-symbols-outlined"
+                      aria-hidden="true"
+                    >
                       logout
                     </span>
                     Logout
@@ -710,11 +735,13 @@ function YearPage() {
                   <strong className="overlay-title">{book.title}</strong>
                   <span className="overlay-author">{book.author}</span>
                   <RatingStars value={book.rating} />
-                  {book.genre && (
-                    <span className="overlay-genre">{book.genre}</span>
+                  {book.genre && book.genre.length > 0 && (
+                    <span className="overlay-genre">{book.genre.join(", ")}</span>
                   )}
                   {book.date_finished && (
-                    <span className="overlay-date">{book.date_finished}</span>
+                    <span className="overlay-date">
+                      {formatDate(book.date_finished)}
+                    </span>
                   )}
                   {data.is_authenticated && (
                     <div className="card-actions">

@@ -27,6 +27,7 @@ function BookModal({
     want_to_read: false,
     date_started: "",
     page_count: "",
+    has_audiobook: false,
   });
 
   const [manualUrlOpen, setManualUrlOpen] = useState(false);
@@ -69,6 +70,7 @@ function BookModal({
       is_private: Boolean(book.is_private),
       currently_reading: Boolean(book.currently_reading),
       want_to_read: Boolean(book.want_to_read),
+      has_audiobook: Boolean(book.has_audiobook),
       date_started: book.date_started || today,
       page_count: book.page_count || "",
     });
@@ -111,6 +113,7 @@ function BookModal({
         want_to_read: false,
         date_started: today,
         page_count: "",
+        has_audiobook: false,
       });
     }
   }, [open, book, initialYear]);
@@ -199,6 +202,7 @@ function BookModal({
       cover_url: form.cover_url.trim() || null,
       is_private: Boolean(form.is_private),
       page_count: form.page_count ? Number(form.page_count) : null,
+      has_audiobook: Boolean(form.has_audiobook),
     };
 
     setSaving(true);
@@ -575,24 +579,47 @@ function BookModal({
               />
             </div>
           )}
+          <div className="form-row" id="checkbox-row">
+            <div className="form-group form-group--checkbox">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  id="f-is-private"
+                  className="checkbox-auto-width"
+                  checked={form.is_private}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      is_private: e.target.checked,
+                    }))
+                  }
+                />
+                <span>Private</span>
+                <span className="material-symbols-rounded" id="private-lock">
+                  lock
+                </span>
+              </label>
+            </div>
 
-          <div className="form-group form-group--checkbox">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                id="f-is-private"
-                checked={form.is_private}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, is_private: e.target.checked }))
-                }
-              />
-              <span>Private</span>
-              <span className="material-symbols-rounded" id="private-lock">
-                lock
-              </span>
-            </label>
+            <div className="form-group form-group--checkbox">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  id="f-has-audiobook"
+                  className="checkbox-auto-width"
+                  checked={form.has_audiobook}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      has_audiobook: e.target.checked,
+                    }))
+                  }
+                />
+                <span style={{ marginRight: "8px" }}>I have the audiobook</span>
+                <span className="material-symbols-rounded">headphones</span>
+              </label>
+            </div>
           </div>
-
           {error && (
             <div id="form-error" className="form-error">
               {error}

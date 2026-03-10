@@ -1,8 +1,18 @@
 import { useState, useEffect } from "react";
 
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 function StatBar({ label, count, maxCount, subLabel }) {
@@ -10,7 +20,9 @@ function StatBar({ label, count, maxCount, subLabel }) {
   return (
     <li className="stat-bar-item">
       <div className="stat-bar-name">
-        <span className="stat-bar-label" title={label}>{label}</span>
+        <span className="stat-bar-label" title={label}>
+          {label}
+        </span>
         {subLabel && <span className="stat-bar-sublabel">{subLabel}</span>}
       </div>
       <div className="stat-bar-track">
@@ -59,6 +71,7 @@ function StatsModal({ open, onClose }) {
   if (!open) return null;
 
   const maxAuthorCount = stats?.top_authors?.[0]?.count || 1;
+  const topRatedAuthors = stats?.top_rated_authors?.filter((a) => a.avg_rating != null) ?? [];
   const maxGenreCount = stats?.top_genres?.[0]?.count || 1;
   const topMonth = stats?.top_month;
   const monthName = topMonth ? MONTHS[parseInt(topMonth.month, 10) - 1] : null;
@@ -123,7 +136,7 @@ function StatsModal({ open, onClose }) {
 
             {stats.top_authors.length > 0 && (
               <section className="stats-section">
-                <h3>Top Authors</h3>
+                <h3>Most Read Authors</h3>
                 <ul className="stat-bar-list">
                   {stats.top_authors.map((a) => (
                     <StatBar
@@ -134,6 +147,23 @@ function StatsModal({ open, onClose }) {
                       subLabel={
                         a.avg_rating ? `★ ${a.avg_rating.toFixed(1)}` : null
                       }
+                    />
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {topRatedAuthors.length > 0 && (
+              <section className="stats-section">
+                <h3>Top Rated Authors</h3>
+                <ul className="stat-bar-list">
+                  {topRatedAuthors.map((a) => (
+                    <StatBar
+                      key={a.author}
+                      label={a.author}
+                      count={a.avg_rating.toFixed(1)}
+                      maxCount={5}
+                      subLabel={`${a.count} ${a.count === 1 ? "book" : "books"}`}
                     />
                   ))}
                 </ul>
@@ -156,7 +186,9 @@ function StatsModal({ open, onClose }) {
               </section>
             )}
 
-            {(monthName || stats.books_by_year.length > 0 || stats.longest_book) && (
+            {(monthName ||
+              stats.books_by_year.length > 0 ||
+              stats.longest_book) && (
               <section className="stats-section">
                 <h3>Fun Facts</h3>
                 <ul className="stats-fun-list">
@@ -190,7 +222,9 @@ function StatsModal({ open, onClose }) {
                         trophy
                       </span>
                       <div className="stats-fun-text">
-                        <span className="stats-fun-label">Best Reading Year</span>
+                        <span className="stats-fun-label">
+                          Best Reading Year
+                        </span>
                         <span className="stats-fun-value">
                           {stats.books_by_year[0].year}{" "}
                           <span className="stats-fun-sub">

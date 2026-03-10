@@ -61,6 +61,7 @@ function validateCreate(body) {
     is_private: asOptionalBool(body.is_private) ?? false,
     currently_reading: asOptionalBool(body.currently_reading) ?? false,
     want_to_read: asOptionalBool(body.want_to_read) ?? false,
+    has_audiobook: asOptionalBool(body.has_audiobook) ?? false,
     date_started: asOptionalDate(body.date_started),
     page_count: asOptionalNumber(body.page_count, {
       min: 1,
@@ -90,6 +91,7 @@ function validateUpdate(body) {
     is_private: asOptionalBool(body.is_private),
     currently_reading: asOptionalBool(body.currently_reading),
     want_to_read: asOptionalBool(body.want_to_read),
+    has_audiobook: asOptionalBool(body.has_audiobook),
     date_started: asOptionalDate(body.date_started),
     page_count: asOptionalNumber(body.page_count, {
       min: 1,

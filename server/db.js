@@ -47,6 +47,7 @@ const MIGRATIONS = [
   "ALTER TABLE books ADD COLUMN date_started TEXT",
   "ALTER TABLE books ADD COLUMN page_count INTEGER",
   "ALTER TABLE books ADD COLUMN wtr_sort_order INTEGER",
+  "ALTER TABLE books ADD COLUMN has_audiobook INTEGER NOT NULL DEFAULT 0",
   "ALTER TABLE books ADD COLUMN user_id INTEGER REFERENCES users(id)",
   "ALTER TABLE reading_goals ADD COLUMN user_id INTEGER",
   "ALTER TABLE reading_goals ADD COLUMN id INTEGER",
@@ -129,6 +130,7 @@ function toBook(row) {
     is_private: Boolean(row.is_private),
     currently_reading: Boolean(row.currently_reading),
     want_to_read: Boolean(row.want_to_read),
+    has_audiobook: Boolean(row.has_audiobook),
   };
 }
 
@@ -296,6 +298,7 @@ function createBook(data) {
     "want_to_read",
     "date_started",
     "page_count",
+    "has_audiobook",
   ];
 
   const cols = fields.filter((f) => data[f] !== undefined && data[f] !== null);
@@ -361,7 +364,18 @@ function getGlobalStats(userId, includePrivate = true) {
        WHERE user_id = ? AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
        GROUP BY author
        ORDER BY count DESC, avg_rating DESC
-       LIMIT 10`
+       LIMIT 5`
+    )
+    .all(userId);
+
+  const topRatedAuthors = db
+    .prepare(
+      `SELECT author, COUNT(*) as count, ROUND(AVG(rating), 1) as avg_rating
+       FROM books
+       WHERE user_id = ? AND rating IS NOT NULL AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
+       GROUP BY author
+       ORDER BY avg_rating DESC, count DESC
+       LIMIT 5`
     )
     .all(userId);
 
@@ -372,7 +386,7 @@ function getGlobalStats(userId, includePrivate = true) {
        WHERE user_id = ? AND genre IS NOT NULL AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
        GROUP BY genre
        ORDER BY count DESC
-       LIMIT 10`
+       LIMIT 5`
     )
     .all(userId);
 
@@ -415,6 +429,7 @@ function getGlobalStats(userId, includePrivate = true) {
       authors: totals.total_authors,
     },
     top_authors: topAuthors,
+    top_rated_authors: topRatedAuthors,
     top_genres: topGenres,
     books_by_year: booksByYear,
     top_month: topMonth || null,

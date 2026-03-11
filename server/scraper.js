@@ -25,14 +25,16 @@ const SUBJECT_DENYLIST = new Set([
   "readable",
   "fiction",
   "nonfiction",
+  "new york times bestseller",
 ]);
 
 // Patterns that indicate noise
 const SUBJECT_DENY_PATTERNS = [
   /\d{4}/, // contains a year or long number
   /^[A-Z]{2,}$/, // all-caps abbreviation
-  /[/\\]/, // contains slash
+  /[/\\:_]/, // contains slash, colon, or underscore
   /,\s*(american|english|british|french|german|canadian|australian)\s*$/i, // geographic qualifier suffix
+  /^(united states|united kingdom|great britain|england|france|germany|canada|australia|new zealand|ireland|scotland|wales|china|japan|india|russia|italy|spain|american)\b/i, // geographic qualifier prefix
 ];
 
 // Canonical genre names — if an OL subject matches one of these (case-insensitive),

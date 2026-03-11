@@ -419,6 +419,7 @@ function getGlobalStats(userId, includePrivate = true) {
        FROM books
        WHERE user_id = ? AND rating IS NOT NULL AND currently_reading = 0 AND want_to_read = 0 ${privateFilter}
        GROUP BY author
+       HAVING COUNT(*) >= 3
        ORDER BY avg_rating DESC, count DESC
        LIMIT 5`
     )

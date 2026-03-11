@@ -32,7 +32,7 @@ In production, Express serves the built client from `client/dist/` and handles a
 | `db.js` | All SQLite queries via better-sqlite3; `initDb()` runs migrations on startup |
 | `validation.js` | Input validation helpers (`validateCreate`, `validateUpdate`, `validateGoal`) |
 | `utils.js` | `titleCase`, `normalizeBookState`, `computePace`, `computeReadingPace` |
-| `scraper.js` | Cover art lookup from Google Books and Open Library APIs |
+| `scraper.js` | Cover art lookup from Google Books and Open Library APIs; also extracts genre suggestions from Open Library subjects |
 
 **Database** is stored at `data/books.db` (relative to `process.cwd()`). WAL mode enabled. Schema migrations are applied in `initDb()` via a `MIGRATIONS` array — add new `ALTER TABLE` statements there; errors are silently swallowed (idempotent).
 
@@ -41,6 +41,21 @@ In production, Express serves the built client from `client/dist/` and handles a
 **Auth** uses `express-session` with session data: `{ userId, username, isAdmin }`. Two middleware guards: `requireAuth` (401 if not logged in) and `requireAdmin` (403 if not admin).
 
 **Public vs. private**: `GET /api/u/:username/year/:year` serves public data (no auth required, `is_private` books filtered out). `GET /api/year/:year` serves the authenticated user's own data including private books.
+
+### Cover & Genre Fetching (`GET /api/cover`)
+
+No auth required. Queries both Google Books and Open Library in parallel and returns:
+```json
+{
+  "google_covers": [{ "url": "...", "page_count": 123 }],
+  "openlibrary_covers": [{ "url": "...", "page_count": 123 }],
+  "genres": ["Fantasy", "Fiction"]
+}
+```
+- **Covers** come from both sources; Google Books results are listed first in the UI.
+- **Genres** come from Open Library subjects only (not Google Books), cleaned and capped at 5.
+- In `BookModal`, genre suggestions are auto-fetched on author field blur (if title+author are filled and no covers are loaded yet) and also on manual "Fetch Cover" click. This applies to all reading statuses — there is no status gate on genre fetching or display.
+- Caveat: if the cover fetch returns no covers, there is an early return in `handleFetchCover` that skips setting suggested genres even if the API returned them.
 
 ### Client (`client/src/`)
 

@@ -95,7 +95,7 @@ function ResetPasswordModal({ user, onClose, onSave }) {
   );
 }
 
-function AddUserForm({ onAdd }) {
+function AddUserForm({ onAdd, hasAdmin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
@@ -144,16 +144,18 @@ function AddUserForm({ onAdd }) {
             placeholder="Password"
           />
         </div>
-        <div className="form-group form-group--checkbox">
-          <label>
-            <input
-              type="checkbox"
-              checked={isAdmin}
-              onChange={(e) => setIsAdmin(e.target.checked)}
-            />
-            Admin
-          </label>
-        </div>
+        {!hasAdmin && (
+          <div className="form-group form-group--checkbox">
+            <label>
+              <input
+                type="checkbox"
+                checked={isAdmin}
+                onChange={(e) => setIsAdmin(e.target.checked)}
+              />
+              Admin
+            </label>
+          </div>
+        )}
         <button type="submit" className="btn-primary" disabled={loading}>
           {loading ? "Adding..." : "Add User"}
         </button>
@@ -170,12 +172,15 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [resetTarget, setResetTarget] = useState(null);
   const [pageError, setPageError] = useState("");
+  const [singleUserMode, setSingleUserMode] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
 
   async function loadData() {
     try {
-      const [status, userList] = await Promise.all([
+      const [status, userList, settings] = await Promise.all([
         apiFetch("/auth/status"),
         apiFetch("/admin/users"),
+        apiFetch("/admin/settings"),
       ]);
       if (!status.authenticated || !status.isAdmin) {
         navigate(`/year/${currentYear}`, { replace: true });
@@ -183,6 +188,7 @@ export default function AdminPage() {
       }
       setCurrentUserId(status.userId);
       setUsers(userList);
+      setSingleUserMode(settings.singleUserMode);
     } catch (err) {
       if (
         err.message.includes("403") ||
@@ -195,6 +201,19 @@ export default function AdminPage() {
       }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleToggleSingleUserMode(value) {
+    setSettingsSaving(true);
+    try {
+      const updated = await apiFetch("/admin/settings", {
+        method: "PUT",
+        body: JSON.stringify({ singleUserMode: value }),
+      });
+      setSingleUserMode(updated.singleUserMode);
+    } finally {
+      setSettingsSaving(false);
     }
   }
 
@@ -244,7 +263,25 @@ export default function AdminPage() {
       </header>
 
       <div className="admin-content">
-        <AddUserForm onAdd={handleAdd} />
+        <div className="admin-settings-section">
+          <h2>Settings</h2>
+          <div className="admin-setting-row">
+            <label className="admin-setting-label">
+              <input
+                type="checkbox"
+                checked={singleUserMode}
+                disabled={settingsSaving}
+                onChange={(e) => handleToggleSingleUserMode(e.target.checked)}
+              />
+              Single-user mode
+            </label>
+            <p className="admin-setting-description">
+              When enabled, the home page shows your bookshelf directly instead of the login screen.
+            </p>
+          </div>
+        </div>
+
+        <AddUserForm onAdd={handleAdd} hasAdmin={users.some((u) => u.is_admin)} />
 
         <div className="admin-users-section">
           <h2>Users</h2>

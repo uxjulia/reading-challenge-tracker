@@ -1673,6 +1673,42 @@ input[type="date"] {
   color: var(--text-muted);
 }
 
+.admin-settings-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+}
+
+.admin-settings-section h2 {
+  margin: 0 0 20px;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.admin-setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-setting-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text);
+  user-select: none;
+}
+
+.admin-setting-description {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  padding-left: 24px;
+}
+
 .admin-users-section h2 {
   font-size: 1rem;
   margin: 0 0 16px;

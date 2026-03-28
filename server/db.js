@@ -38,6 +38,10 @@ CREATE TABLE IF NOT EXISTS reading_goals (
   goal INTEGER NOT NULL CHECK(goal > 0),
   UNIQUE(user_id, year)
 );
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
 `;
 
 const MIGRATIONS = [
@@ -483,6 +487,29 @@ function getGlobalStats(userId, includePrivate = true) {
   };
 }
 
+// ── App settings ──────────────────────────────────────────────────────────────
+
+function getSetting(key, defaultValue = null) {
+  const row = db.prepare("SELECT value FROM app_settings WHERE key = ?").get(key);
+  return row ? row.value : defaultValue;
+}
+
+function setSetting(key, value) {
+  db.prepare(
+    "INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+  ).run(key, String(value));
+}
+
+function getAdminUser() {
+  return (
+    db
+      .prepare(
+        "SELECT id, username FROM users WHERE is_admin = 1 ORDER BY id ASC LIMIT 1"
+      )
+      .get() || null
+  );
+}
+
 function getGoal(year, userId) {
   const row = db
     .prepare("SELECT goal FROM reading_goals WHERE year = ? AND user_id = ?")
@@ -530,4 +557,8 @@ module.exports = {
   // Goals
   getGoal,
   setGoal,
+  // App settings
+  getSetting,
+  setSetting,
+  getAdminUser,
 };

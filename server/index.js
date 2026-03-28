@@ -187,6 +187,13 @@ app.post("/admin/users", requireAdmin, async (req, res) => {
     return res.status(409).json({ detail: "Username already taken" });
   }
 
+  if (isAdmin) {
+    const users = db.getAllUsers();
+    if (users.some((u) => u.is_admin)) {
+      return res.status(409).json({ detail: "An admin user already exists" });
+    }
+  }
+
   const hash = await bcrypt.hash(password, 10);
   const user = db.createUser(username.trim(), hash, Boolean(isAdmin));
   return res.status(201).json(user);
@@ -209,6 +216,20 @@ app.patch("/admin/users/:userId/password", requireAdmin, async (req, res) => {
   return res.json({ ok: true });
 });
 
+app.get("/admin/settings", requireAdmin, (_req, res) => {
+  const singleUserMode = db.getSetting("single_user_mode", "0") === "1";
+  return res.json({ singleUserMode });
+});
+
+app.put("/admin/settings", requireAdmin, (req, res) => {
+  const { singleUserMode } = req.body || {};
+  if (typeof singleUserMode !== "boolean") {
+    return res.status(422).json({ detail: "singleUserMode must be a boolean" });
+  }
+  db.setSetting("single_user_mode", singleUserMode ? "1" : "0");
+  return res.json({ singleUserMode });
+});
+
 app.delete("/admin/users/:userId", requireAdmin, (req, res) => {
   const userId = Number(req.params.userId);
   if (userId === req.session.userId) {
@@ -222,6 +243,15 @@ app.delete("/admin/users/:userId", requireAdmin, (req, res) => {
 
   db.deleteUser(userId);
   return res.status(204).send();
+});
+
+app.get("/api/app-settings", (req, res) => {
+  const singleUserMode = db.getSetting("single_user_mode", "0") === "1";
+  const adminUser = singleUserMode ? db.getAdminUser() : null;
+  return res.json({
+    singleUserMode,
+    adminUsername: adminUser ? adminUser.username : null,
+  });
 });
 
 // ── Book & year routes ────────────────────────────────────────────────────────

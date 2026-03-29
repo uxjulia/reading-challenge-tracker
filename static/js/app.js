@@ -566,29 +566,6 @@ async function markWantAsReading(bookId) {
   }
 }
 
-async function markWantAsReading(bookId) {
-  const today = new Date().toISOString().split("T")[0];
-
-  try {
-    const res = await fetch(`/api/books/${bookId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        currently_reading: true,
-        want_to_read: false,
-        date_started: today,
-      }),
-    });
-    if (res.ok) {
-      window.location.reload();
-    } else {
-      alert("Failed to start book.");
-    }
-  } catch (e) {
-    alert("Network error.");
-  }
-}
-
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function openLoginModal() {
   const modal = document.getElementById("login-modal");

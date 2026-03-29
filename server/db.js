@@ -373,8 +373,33 @@ function updateBook(bookId, userId, data) {
   if (!data || !Object.keys(data).length) {
     return getBook(bookId, userId);
   }
+
+  const allowedFields = [
+    "user_id",
+    "year",
+    "title",
+    "author",
+    "date_finished",
+    "rating",
+    "genre",
+    "notes",
+    "cover_url",
+    "is_private",
+    "currently_reading",
+    "want_to_read",
+    "date_started",
+    "page_count",
+    "has_audiobook",
+    "wtr_sort_order",
+  ];
+
   const processed = { ...data, ...(data.genre !== undefined && { genre: serializeGenre(data.genre) }) };
-  const keys = Object.keys(processed);
+  const keys = Object.keys(processed).filter(k => allowedFields.includes(k));
+
+  if (keys.length === 0) {
+    return getBook(bookId, userId);
+  }
+
   const setClause = keys.map((k) => `${k} = ?`).join(", ");
   const values = keys.map((k) => toSqlValue(processed[k]));
   db.prepare(`UPDATE books SET ${setClause} WHERE id = ? AND user_id = ?`).run(

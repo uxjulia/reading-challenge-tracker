@@ -23,6 +23,14 @@ const {
 const PORT = Number(process.env.PORT || 8000);
 const SECRET_KEY =
   process.env.SECRET_KEY || "dev-secret-key-change-in-production";
+
+if (process.env.NODE_ENV === "production" && !process.env.SECRET_KEY) {
+  console.error(
+    "FATAL ERROR: SECRET_KEY environment variable is not set in production."
+  );
+  process.exit(1);
+}
+
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 
 db.initDb();

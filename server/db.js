@@ -559,6 +559,7 @@ function setGoal(year, goal, userId) {
 
 module.exports = {
   initDb,
+  toSqlValue,
   // Users
   getUserByUsername,
   getUserById,

@@ -11,6 +11,7 @@
     "dev:client": "npm --workspace client run dev",
     "build": "npm --workspace client run build",
     "start": "NODE_ENV=production node server/index.js",
+    "test": "node --test",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

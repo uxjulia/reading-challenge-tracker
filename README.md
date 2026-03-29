@@ -1,3 +1,5 @@
+> AI Disclosure: This app was heavily vibe coded with Claude Code.
+
 # Reading Challenge Tracker (Node.js + React)
 
 A self-hosted reading tracker with a Node.js/Express API, SQLite storage, and a React frontend.

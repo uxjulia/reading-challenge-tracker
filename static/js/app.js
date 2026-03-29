@@ -7,6 +7,7 @@ let coverFetchController = null;
 let selectedRating = 0;
 let hoverRating = 0;
 let currentReadingStatus = "finished"; // 'finished' | 'reading' | 'want'
+let starButtonsCache = null;
 
 // ── Modal ────────────────────────────────────────────────────────────────────
 function openAddModal() {
@@ -170,6 +171,7 @@ function initStarRating() {
     btn.addEventListener("mouseleave", () => highlightStars(selectedRating));
     container.appendChild(btn);
   }
+  starButtonsCache = container.querySelectorAll(".star-btn");
   highlightStars(0);
 }
 
@@ -180,7 +182,8 @@ function setRating(value) {
 }
 
 function highlightStars(upTo) {
-  document.querySelectorAll(".star-btn").forEach((btn, i) => {
+  const btns = starButtonsCache || document.querySelectorAll(".star-btn");
+  btns.forEach((btn, i) => {
     const starNum = i + 1;
     const isFull = starNum <= upTo;
     const isHalf = !isFull && upTo % 1 !== 0 && starNum === Math.ceil(upTo);

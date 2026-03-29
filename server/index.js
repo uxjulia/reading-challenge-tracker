@@ -29,6 +29,10 @@ db.initDb();
 
 const app = express();
 
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
+
 app.use(express.json());
 app.use(
   session({
@@ -39,6 +43,7 @@ app.use(
       maxAge: 86400 * 30 * 1000,
       httpOnly: true,
       sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
     },
   })
 );
@@ -409,9 +414,19 @@ if (process.env.NODE_ENV === "production") {
   const distPath = path.resolve(process.cwd(), "client", "dist");
   app.use(express.static(distPath));
 
-  app.get(["/", "/year/:year", "/admin", "/u/:username", "/u/:username/year/:year", "*"], (_req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
-  });
+  app.get(
+    [
+      "/",
+      "/year/:year",
+      "/admin",
+      "/u/:username",
+      "/u/:username/year/:year",
+      "*",
+    ],
+    (_req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    }
+  );
 }
 
 app.listen(PORT, () => {

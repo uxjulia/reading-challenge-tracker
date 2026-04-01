@@ -1,6 +1,20 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import {
+  ChartNoAxesColumn,
+  CircleUser,
+  ChevronDown,
+  Check,
+  Share2,
+  UserRoundCog,
+  LogOut,
+  SquarePen,
+  GripVertical,
+  Lock,
+  Pencil,
+  Headphones,
+} from "lucide-react";
+import {
   DndContext,
   closestCenter,
   PointerSensor,
@@ -112,12 +126,11 @@ function SortableWtrBook({ book, isAuthenticated, onStartReading, onEdit }) {
         <strong className="wtr-title">
           {book.title}
           {book.has_audiobook && (
-            <span
-              className="material-symbols-rounded wtr-audiobook-icon"
+            <Headphones
+              size={14}
+              className="wtr-audiobook-icon"
               title="Audiobook available"
-            >
-              headphones
-            </span>
+            />
           )}
         </strong>
         <span className="wtr-author">{book.author}</span>
@@ -130,14 +143,14 @@ function SortableWtrBook({ book, isAuthenticated, onStartReading, onEdit }) {
               Start Reading
             </button>
             <button className="btn-secondary btn-sm btn-icon" onClick={onEdit}>
-              <span className="material-symbols-outlined">edit_square</span>
+              <SquarePen size={16} />
             </button>
           </div>
         )}
       </div>
       {isAuthenticated && (
         <div className="wtr-drag-handle" {...attributes} {...listeners}>
-          <span className="material-symbols-outlined">drag_indicator</span>
+          <GripVertical size={20} />
         </div>
       )}
     </div>
@@ -390,14 +403,12 @@ function YearPage() {
         <div className="header-auth">
           {data.is_authenticated && (
             <button
-              className="btn-auth btn-stats-icon"
+              className="btn-stats-icon btn-auth"
               onClick={() => setStatsOpen(true)}
               aria-label="View reading stats"
               type="button"
             >
-              <span className="material-symbols-outlined" aria-hidden="true">
-                bar_chart
-              </span>
+              <ChartNoAxesColumn strokeWidth={3} size={16} aria-hidden="true" />
             </button>
           )}
           {data.is_authenticated ? (
@@ -408,16 +419,13 @@ function YearPage() {
                 aria-haspopup="true"
                 aria-expanded={menuOpen}
               >
-                <span className="material-symbols-outlined" aria-hidden="true">
-                  account_circle
-                </span>
+                <CircleUser size={16} aria-hidden="true" />
                 <span className="user-menu-name">{data.app_user}</span>
-                <span
-                  className="material-symbols-outlined user-menu-chevron"
+                <ChevronDown
+                  size={16}
+                  className="user-menu-chevron"
                   aria-hidden="true"
-                >
-                  expand_more
-                </span>
+                />
               </button>
               {menuOpen && (
                 <div className="user-menu-dropdown" role="menu">
@@ -434,12 +442,11 @@ function YearPage() {
                       }, 1500);
                     }}
                   >
-                    <span
-                      className="material-symbols-outlined"
-                      aria-hidden="true"
-                    >
-                      {shareCopied ? "check" : "share"}
-                    </span>
+                    {shareCopied ? (
+                      <Check size={16} aria-hidden="true" />
+                    ) : (
+                      <Share2 size={16} aria-hidden="true" />
+                    )}
                     {shareCopied ? "Copied!" : "Copy public link"}
                   </button>
                   {data.is_admin && (
@@ -449,12 +456,7 @@ function YearPage() {
                       role="menuitem"
                       onClick={() => setMenuOpen(false)}
                     >
-                      <span
-                        className="material-symbols-outlined"
-                        aria-hidden="true"
-                      >
-                        manage_accounts
-                      </span>
+                      <UserRoundCog size={16} aria-hidden="true" />
                       Admin
                     </Link>
                   )}
@@ -466,12 +468,7 @@ function YearPage() {
                       logout();
                     }}
                   >
-                    <span
-                      className="material-symbols-outlined"
-                      aria-hidden="true"
-                    >
-                      logout
-                    </span>
+                    <LogOut size={16} aria-hidden="true" />
                     Logout
                   </button>
                 </div>
@@ -553,7 +550,7 @@ function YearPage() {
                   className="btn-goal-edit btn-icon"
                   onClick={() => setGoalEditing(true)}
                 >
-                  <span className="material-symbols-outlined">edit</span>
+                  <Pencil size={14} />
                 </button>
               )}
             </span>
@@ -659,9 +656,7 @@ function YearPage() {
                         className="btn-secondary btn-sm btn-icon"
                         onClick={() => openEditModal(book.id)}
                       >
-                        <span className="material-symbols-outlined">
-                          edit_square
-                        </span>
+                        <SquarePen size={16} />
                       </button>
                     </div>
                   )}
@@ -721,7 +716,7 @@ function YearPage() {
               >
                 {book.is_private && (
                   <span className="lock-badge" title="Private">
-                    <span className="material-symbols-rounded">lock</span>
+                    <Lock size={14} />
                   </span>
                 )}
 

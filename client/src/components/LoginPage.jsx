@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { BookOpen } from "lucide-react";
 
 const currentYear = new Date().getFullYear();
 
@@ -54,7 +55,7 @@ export default function LoginPage() {
     <div className="login-page">
       <div className="login-page-card">
         <div className="login-page-icon">
-          <span class="material-symbols-outlined">auto_stories</span>
+          <BookOpen size={48} />
         </div>
         <h1 className="login-page-title">Reading Challenge</h1>
         <form noValidate onSubmit={handleSubmit} className="login-page-form">

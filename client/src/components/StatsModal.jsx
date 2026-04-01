@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { X, CalendarDays, Trophy, BookOpen } from "lucide-react";
 
 const MONTHS = [
   "January",
@@ -93,7 +94,7 @@ function StatsModal({ open, onClose }) {
             aria-label="Close"
             type="button"
           >
-            ×
+            <X size={18} />
           </button>
         </div>
         <div className="modal-body">
@@ -197,12 +198,7 @@ function StatsModal({ open, onClose }) {
                 <ul className="stats-fun-list">
                   {monthName && (
                     <li className="stats-fun-item">
-                      <span
-                        className="material-symbols-outlined"
-                        aria-hidden="true"
-                      >
-                        calendar_month
-                      </span>
+                      <CalendarDays size={20} aria-hidden="true" />
                       <div className="stats-fun-text">
                         <span className="stats-fun-label">
                           Favorite Reading Month
@@ -218,12 +214,7 @@ function StatsModal({ open, onClose }) {
                   )}
                   {stats.books_by_year.length > 0 && (
                     <li className="stats-fun-item">
-                      <span
-                        className="material-symbols-outlined"
-                        aria-hidden="true"
-                      >
-                        trophy
-                      </span>
+                      <Trophy size={20} aria-hidden="true" />
                       <div className="stats-fun-text">
                         <span className="stats-fun-label">
                           Best Reading Year
@@ -239,12 +230,7 @@ function StatsModal({ open, onClose }) {
                   )}
                   {stats.longest_book && (
                     <li className="stats-fun-item">
-                      <span
-                        className="material-symbols-outlined"
-                        aria-hidden="true"
-                      >
-                        menu_book
-                      </span>
+                      <BookOpen size={20} aria-hidden="true" />
                       <div className="stats-fun-text">
                         <span className="stats-fun-label">Longest Book</span>
                         <span className="stats-fun-value">

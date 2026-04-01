@@ -146,10 +146,6 @@ a.btn-auth {
 .modal-content--stats {
   width: min(660px, 95vw);
   max-height: 85vh;
-  overflow-y: auto;
-}
-.modal-content--stats h2 {
-  margin-bottom: 20px;
 }
 .stats-loading {
   color: var(--text-muted);
@@ -1057,19 +1053,39 @@ a.btn-auth {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 3px;
-  padding: 28px 32px 32px;
   width: min(580px, 95vw);
   max-height: 90vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   z-index: 1;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 32px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.modal-header h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.modal-body {
+  overflow-y: auto;
+  padding: 24px 32px 32px;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
 }
 
 .modal-close {
-  position: absolute;
-  top: 14px;
-  right: 18px;
   background: none;
   border: none;
   color: var(--text-muted);
@@ -1078,6 +1094,7 @@ a.btn-auth {
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 2px;
+  flex-shrink: 0;
   transition:
     color 0.15s,
     background 0.15s;
@@ -1525,8 +1542,11 @@ input[type="date"] {
   .year-tabs {
     padding: 12px 16px 0;
   }
-  .modal-content {
-    padding: 20px 18px 24px;
+  .modal-header {
+    padding: 16px 18px 12px;
+  }
+  .modal-body {
+    padding: 18px 18px 24px;
   }
   input[type="date"] {
     width: 93%;

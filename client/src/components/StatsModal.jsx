@@ -85,15 +85,18 @@ function StatsModal({ open, onClose }) {
     >
       <div className="modal-overlay" onClick={onClose} aria-hidden="true" />
       <div className="modal-content modal-content--stats">
-        <button
-          className="modal-close"
-          onClick={onClose}
-          aria-label="Close"
-          type="button"
-        >
-          ×
-        </button>
-        <h2 id="stats-modal-title">Reading Stats</h2>
+        <div className="modal-header">
+          <h2 id="stats-modal-title">Reading Stats</h2>
+          <button
+            className="modal-close"
+            onClick={onClose}
+            aria-label="Close"
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+        <div className="modal-body">
 
         {loading && <p className="stats-loading">Loading…</p>}
         {error && <p className="form-error">{error}</p>}
@@ -259,6 +262,7 @@ function StatsModal({ open, onClose }) {
             )}
           </>
         )}
+        </div>
       </div>
     </div>
   );

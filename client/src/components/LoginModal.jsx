@@ -29,15 +29,18 @@ function LoginModal({ open, onClose, onLogin }) {
     >
       <div className="modal-overlay" onClick={onClose} aria-hidden="true" />
       <div className="modal-content modal-content--narrow">
-        <button
-          className="modal-close"
-          onClick={onClose}
-          aria-label="Close"
-          type="button"
-        >
-          ×
-        </button>
-        <h2 id="login-modal-title">Login</h2>
+        <div className="modal-header">
+          <h2 id="login-modal-title">Login</h2>
+          <button
+            className="modal-close"
+            onClick={onClose}
+            aria-label="Close"
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+        <div className="modal-body">
 
         <form
           id="login-form"
@@ -99,6 +102,7 @@ function LoginModal({ open, onClose, onLogin }) {
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

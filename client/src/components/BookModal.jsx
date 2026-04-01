@@ -263,16 +263,18 @@ function BookModal({
     >
       <div className="modal-overlay" onClick={onClose} aria-hidden="true" />
       <div className="modal-content">
-        <button
-          className="modal-close"
-          onClick={onClose}
-          aria-label="Close modal"
-          type="button"
-        >
-          ×
-        </button>
-        <h2 id="modal-title">{mode === "edit" ? "Edit Book" : "Add Book"}</h2>
-
+        <div className="modal-header">
+          <h2 id="modal-title">{mode === "edit" ? "Edit Book" : "Add Book"}</h2>
+          <button
+            className="modal-close"
+            onClick={onClose}
+            aria-label="Close modal"
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+        <div className="modal-body">
         <form id="book-form" noValidate onSubmit={submit}>
           <div className="form-group">
             <label>Status</label>
@@ -718,6 +720,7 @@ function BookModal({
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

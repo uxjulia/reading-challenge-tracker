@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { X, ArrowLeft } from "lucide-react";
 
 const currentYear = new Date().getFullYear();
 
@@ -45,7 +46,7 @@ function ResetPasswordModal({ user, onClose, onSave }) {
           type="button"
           aria-label="Close"
         >
-          ×
+          <X size={18} />
         </button>
         <h2>Reset Password</h2>
         <p className="login-subtitle">
@@ -256,8 +257,8 @@ export default function AdminPage() {
       <header className="app-header">
         <h1>Admin</h1>
         <div className="header-auth">
-          <Link to={`/year/${currentYear}`} className="btn-auth">
-            ← Back
+          <Link to={`/year/${currentYear}`} className="btn-user-menu btn-auth">
+            <ArrowLeft size={16} /> Back
           </Link>
         </div>
       </header>
@@ -276,12 +277,16 @@ export default function AdminPage() {
               Single-user mode
             </label>
             <p className="admin-setting-description">
-              When enabled, the home page shows your bookshelf directly instead of the login screen.
+              When enabled, the home page shows your bookshelf directly instead
+              of the login screen.
             </p>
           </div>
         </div>
 
-        <AddUserForm onAdd={handleAdd} hasAdmin={users.some((u) => u.is_admin)} />
+        <AddUserForm
+          onAdd={handleAdd}
+          hasAdmin={users.some((u) => u.is_admin)}
+        />
 
         <div className="admin-users-section">
           <h2>Users</h2>

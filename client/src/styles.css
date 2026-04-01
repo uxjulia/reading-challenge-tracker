@@ -70,7 +70,7 @@ body {
 .btn-stats-icon {
   display: flex;
   align-items: center;
-  padding: 5px 7px;
+  padding: 5px 7px !important;
 }
 .btn-stats-icon .material-symbols-outlined {
   font-size: 1.15rem;

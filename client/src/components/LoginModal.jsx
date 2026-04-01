@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { X } from "lucide-react";
 
 function LoginModal({ open, onClose, onLogin }) {
   const [username, setUsername] = useState("");
@@ -37,7 +38,7 @@ function LoginModal({ open, onClose, onLogin }) {
             aria-label="Close"
             type="button"
           >
-            ×
+            <X size={18} />
           </button>
         </div>
         <div className="modal-body">

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { X, Lock, Headphones } from "lucide-react";
 import StarInput from "./StarInput";
 
 const getToday = () => new Date().toISOString().split("T")[0];
@@ -271,7 +272,7 @@ function BookModal({
             aria-label="Close modal"
             type="button"
           >
-            ×
+            <X size={18} />
           </button>
         </div>
         <div className="modal-body">
@@ -525,7 +526,7 @@ function BookModal({
                             }))
                           }
                         >
-                          ×
+                          <X size={12} />
                         </button>
                       </span>
                     ))}
@@ -660,9 +661,7 @@ function BookModal({
                   }
                 />
                 <span>Private</span>
-                <span className="material-symbols-rounded" id="private-lock">
-                  lock
-                </span>
+                <Lock size={16} id="private-lock" />
               </label>
             </div>
 
@@ -681,7 +680,7 @@ function BookModal({
                   }
                 />
                 <span style={{ marginRight: "8px" }}>Audiobook</span>
-                <span className="material-symbols-rounded">headphones</span>
+                <Headphones size={16} />
               </label>
             </div>
           </div>

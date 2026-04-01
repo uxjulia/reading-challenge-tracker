@@ -79,7 +79,7 @@ body {
 .btn-auth {
   background: none;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 2px;
   color: var(--text-muted);
   cursor: pointer;
   font-size: 0.8rem;
@@ -454,7 +454,7 @@ a.btn-auth {
   width: 56px;
   background: var(--surface-2);
   border: 1px solid var(--accent);
-  border-radius: 4px;
+  border-radius: 2px;
   color: var(--text);
   font-size: 0.85rem;
   font-family: inherit;
@@ -473,7 +473,7 @@ a.btn-auth {
   background: var(--accent);
   color: #fff;
   border: none;
-  border-radius: 6px;
+  border-radius: 2px;
   padding: 8px 15px;
   font-size: 0.9rem;
   font-weight: 600;
@@ -492,7 +492,7 @@ a.btn-auth {
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 2px;
   padding: 8px 18px;
   font-size: 0.9rem;
   font-weight: 600;
@@ -507,7 +507,7 @@ a.btn-auth {
   background: rgba(195, 42, 42, 0.15);
   color: #e06060;
   border: 1px solid rgba(195, 42, 42, 0.4);
-  border-radius: 6px;
+  border-radius: 2px;
   padding: 8px 18px;
   font-size: 0.9rem;
   font-weight: 600;
@@ -692,7 +692,7 @@ a.btn-auth {
   flex-shrink: 0;
   width: 60px;
   height: 90px;
-  border-radius: 4px;
+  border-radius: 2px;
   overflow: hidden;
   box-shadow: var(--shadow);
   align-self: center;
@@ -752,7 +752,7 @@ a.btn-auth {
 .status-toggle {
   display: flex;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 2px;
   overflow: hidden;
 }
 
@@ -854,7 +854,7 @@ a.btn-auth {
   background: rgba(0, 0, 0, 0.6);
   font-size: 1rem;
   padding: 2px 6px 0px;
-  border-radius: 4px;
+  border-radius: 2px;
   color: #ded14d;
 }
 
@@ -985,7 +985,7 @@ a.btn-auth {
 .btn-edit,
 .btn-delete {
   border: none;
-  border-radius: 4px;
+  border-radius: 2px;
   padding: 4px 10px;
   font-size: 0.7rem;
   font-weight: 600;
@@ -1056,7 +1056,7 @@ a.btn-auth {
   position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 3px;
   padding: 28px 32px 32px;
   width: min(580px, 95vw);
   max-height: 90vh;
@@ -1077,7 +1077,7 @@ a.btn-auth {
   line-height: 1;
   cursor: pointer;
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: 2px;
   transition:
     color 0.15s,
     background 0.15s;
@@ -1134,7 +1134,7 @@ a.btn-auth {
 .form-group select {
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 2px;
   color: var(--text);
   padding: 9px 10px;
   font-size: 0.95rem;
@@ -1161,7 +1161,7 @@ a.btn-auth {
   align-items: center;
   padding: 5px 8px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 2px;
   background: var(--surface-2);
   min-height: 38px;
   cursor: text;
@@ -1182,7 +1182,7 @@ a.btn-auth {
   gap: 4px;
   background: var(--accent);
   color: #fff;
-  border-radius: 4px;
+  border-radius: 2px;
   padding: 2px 7px 2px 9px;
   font-size: 0.8rem;
   white-space: nowrap;
@@ -1209,7 +1209,7 @@ a.btn-auth {
   right: 0;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 2px;
   margin: 4px 0 0;
   padding: 4px 0;
   list-style: none;
@@ -1247,7 +1247,9 @@ a.btn-auth {
   cursor: pointer;
   font-size: 0.8rem;
   padding: 2px 10px;
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
 }
 .genre-suggestion-pill:hover {
   border-color: var(--accent);
@@ -1361,7 +1363,7 @@ input[type="date"] {
 .star-rating {
   display: flex;
   gap: 2px;
-  border-radius: 4px;
+  border-radius: 2px;
   outline: none;
   touch-action: none;
   width: fit-content;
@@ -1411,7 +1413,7 @@ input[type="date"] {
 .form-error {
   background: rgba(233, 69, 96, 0.15);
   border: 1px solid var(--accent);
-  border-radius: 6px;
+  border-radius: 2px;
   color: var(--accent);
   font-size: 0.85rem;
   padding: 10px 14px;
@@ -1745,7 +1747,7 @@ input[type="date"] {
 .admin-badge {
   background: var(--accent);
   color: #fff;
-  border-radius: 4px;
+  border-radius: 2px;
   padding: 2px 8px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -1765,7 +1767,7 @@ input[type="date"] {
 .btn-danger {
   background: none;
   border: 1px solid #c0392b;
-  border-radius: 6px;
+  border-radius: 2px;
   color: #c0392b;
   cursor: pointer;
   font-size: 0.8rem;

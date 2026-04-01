@@ -294,7 +294,11 @@ function YearPage() {
       method: "POST",
       body: JSON.stringify({ username, password }),
     });
-    await load();
+    if (publicUser) {
+      navigate(`/year/${year}`);
+    } else {
+      await load();
+    }
   }
 
   async function logout() {
@@ -380,7 +384,9 @@ function YearPage() {
   return (
     <>
       <header className="app-header">
-        <h1>{headerTitle}</h1>
+        <h1 onClick={() => setLoginOpen(!data.is_authenticated)}>
+          {headerTitle}
+        </h1>
         <div className="header-auth">
           {data.is_authenticated && (
             <button
@@ -736,7 +742,9 @@ function YearPage() {
                   <span className="overlay-author">{book.author}</span>
                   <RatingStars value={book.rating} />
                   {book.genre && book.genre.length > 0 && (
-                    <span className="overlay-genre">{book.genre.join(", ")}</span>
+                    <span className="overlay-genre">
+                      {book.genre.join(", ")}
+                    </span>
                   )}
                   {book.date_finished && (
                     <span className="overlay-date">

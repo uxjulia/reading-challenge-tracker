@@ -31,7 +31,6 @@ import { CSS } from "@dnd-kit/utilities";
 import BookModal from "./BookModal";
 import LoginModal from "./LoginModal";
 import StatsModal from "./StatsModal";
-import StarInput from "./StarInput";
 
 const currentYear = new Date().getFullYear();
 
@@ -99,7 +98,10 @@ function SortableWtrBook({ book, isAuthenticated, onStartReading, onEdit }) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: book.id, disabled: !isAuthenticated });
+  } = useSortable({
+    id: book.id,
+    disabled: !isAuthenticated,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),

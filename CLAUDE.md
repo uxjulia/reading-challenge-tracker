@@ -2,6 +2,33 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+# Project Context
+
+This is a javascript project using express.
+It is a monorepo with workspaces: reading-challenge-client (client).
+
+The API has 20 routes. See .codesight/routes.md for the full route map with methods, paths, and tags.
+The UI has 8 components. See .codesight/components.md for the full list with props.
+Middleware includes: auth, cors.
+
+High-impact files (most imported, changes here affect many other files):
+- server/db.js (imported by 2 files)
+- server/utils.js (imported by 2 files)
+- client/src/components/YearPage.jsx (imported by 1 files)
+- client/src/components/AdminPage.jsx (imported by 1 files)
+- client/src/components/LoginPage.jsx (imported by 1 files)
+- client/src/components/StarInput.jsx (imported by 1 files)
+- client/src/components/BookModal.jsx (imported by 1 files)
+- client/src/components/LoginModal.jsx (imported by 1 files)
+
+Required environment variables (no defaults):
+- DEV (client/src/components/YearPage.jsx)
+- NODE_ENV (server/index.js)
+
+Read .codesight/wiki/index.md for orientation (WHERE things live). Then read actual source files before implementing. Wiki articles are navigation aids, not implementation guides.
+Read .codesight/CODESIGHT.md for the complete AI context map including all routes, schema, components, libraries, config, middleware, and dependency graph.
+
+
 ## Commands
 
 ```bash

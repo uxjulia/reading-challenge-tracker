@@ -1,4 +1,4 @@
-> AI Disclosure: This app was heavily vibe coded with Claude Code.
+> AI Disclosure: This app was heavily vibe coded with Claude Code over a weekend to see what Claude was all about.
 
 # Reading Challenge Tracker (Node.js + React)
 

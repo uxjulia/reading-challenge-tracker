@@ -63,13 +63,11 @@ function normalizeBookState(data) {
     data.date_finished = null;
     data.date_started = null;
     data.rating = null;
-    data.genre = null;
     data.notes = null;
   } else if (isReading) {
     data.want_to_read = false;
     data.date_finished = null;
     data.rating = null;
-    data.genre = null;
     data.notes = null;
   } else {
     data.currently_reading = false;

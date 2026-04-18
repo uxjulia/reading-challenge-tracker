@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
-function StarInput({ rating, setRating }) {
+export function StarInput({ rating, setRating }) {
   const [hoverRating, setHoverRating] = useState(0);
   const containerRef = useRef(null);
   const active = hoverRating || rating;
@@ -96,5 +96,3 @@ function StarInput({ rating, setRating }) {
     </div>
   );
 }
-
-export default StarInput;

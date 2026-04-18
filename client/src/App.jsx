@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import YearPage from "./components/YearPage";
 import AdminPage from "./components/AdminPage";
-import LoginPage from "./components/LoginPage";
+import LoginPage from "./components/Auth/LoginPage";
 
 const currentYear = new Date().getFullYear();
 
